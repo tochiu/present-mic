@@ -1,4 +1,6 @@
-require('dotenv').config()
+if (process.env.NODE_ENV === "DEVELOPMENT") {
+    require('dotenv').config()
+}
 
 const Discord = require('discord.js')
 const { generateDependencyReport } = require('@discordjs/voice')
