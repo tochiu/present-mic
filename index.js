@@ -13,12 +13,12 @@ try {
 /* the webm demultiplexer has a default highWaterMark of 16kB */
 /* this property was exposed in djs v12 but no longer in v13 */
 /* after backtracking through @discordjs/voice source code for creating AudioResources I found the class that builds the Transform stream and overwrote it */
-/* now the default highWaterMark is 32kb and is adjustable here */
+/* now the default is adjustable here */
 {
     const prism = require("prism-media")
     prism.opus.WebmDemuxer = class WebmDemuxerHack extends prism.opus.WebmDemuxer {
         constructor(options = {}) {
-            super(Object.assign({ highWaterMark: 32 }, options))
+            super(Object.assign({ highWaterMark: 16 }, options))
         }
     }
 }
