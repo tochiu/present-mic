@@ -1,13 +1,9 @@
 const { resolve } = require('path')
 const { readdir } = require('fs').promises
-const { REST } = require('@discordjs/rest')
-const { Routes } = require('discord-api-types/v9')
-const { SlashCommandBuilder } = require('@discordjs/builders')
 
 const BaseCommand = require('./BaseCommand')
 
-/* https://stackoverflow.com/a/45130990 */
-
+/* recursive fs.readdir provided by https://stackoverflow.com/a/45130990 */
 async function getFiles(dir) {
     const dirents = await readdir(dir, { withFileTypes: true })
     const files = await Promise.all(dirents.map((dirent) => {
@@ -17,7 +13,8 @@ async function getFiles(dir) {
     return Array.prototype.concat(...files)
 }
 
-const commandClasses = (async () => {
+/* promise that resolves to an array of command classes */
+const gettingCommandClasses = (async () => {
     const commands = []
     const files = await getFiles(__dirname)
     for (const filename of files) {
@@ -36,45 +33,87 @@ const commandClasses = (async () => {
     return commands
 })()
 
+/**
+ * A GuildCommandsManager exists for each GuildManager. Registering slash commands and handling command interactions
+ * for a guild are exclusively executed here.
+ */
 class GuildCommandsManager {
     
     constructor(guild, client) {
         this.client = client
         this.guild = guild
         this.map = new Map()
-        console.log(`Loading "${guild.name}" commands.`)
-        this._load()
-            .then(() => console.log(`Successfully loaded "${guild.name}" commands.`))
-            .catch(console.error)
-    }
+        
+        this._ownerContact = ""
+        this._commandErrorMessage = "Yikes! :scream: Somethin' went **horribly** wrong tryna run this command!"
 
-    handle(interaction, manager) {
-        /* validate command */
+        /**
+         * TODO: place this owner contact logic inside the client since its independent of the guild
+         */
+        this.client.application.fetch()
+            .then(application => {
+                this._ownerContact = ` Might wanna contact **\`${application.owner.tag}\`** about this!`
+            })
+            .catch(console.error)
+
+        this._register()
+            .then(() => console.log(`Successfully registered "${this.guild.name}" commands.`))
+            .catch((e) => {
+                /* commands failed to register */
+                console.error("Guild command registration error")
+                console.error(e)
+
+                /* send in system channel if it exists */
+                if (this.guild.systemChannel) {
+                    this.guild.systemChannel.send("Yikes! :scream: It appears I encountered an issue registering commands for this guild." + this._ownerContact)
+                }
+
+                /* dm server owner about the issue */
+                this.guild.fetchOwner()
+                    .then(owner => owner.createDM())
+                    .then(dm => dm.send(`Hey! :wave: I encountered an issue registering commands for \`${this.guild.name}\`.${this._ownerContact}`))
+                    .catch(e => {
+                        console.error("Error encountered attempting to send command registration fail message to guild owner")
+                        console.error(e)
+                    })
+            })
+    }
+    
+    async handle(interaction, manager) {
+        /* abort if not valid command */
         const command = this.map.get(interaction.commandName)
         if (!command) {
             interaction.reply({ content: "Sorry! :man_shrugging: I don't know how to execute this command!", ephemeral: true })
             return
         }
         
-        /* run command */
+        /* execute command */
         try {
-            try {
-                command.run(interaction, manager)
-            } catch (e) {
-                command.onError(e, interaction, manager)
-            }
+            await command.handle(interaction, manager)
         } catch (e) {
-            console.error("Command execution error handler error")
+            /* command error */
+            console.error("Command execution error")
             console.error(e)
-            interaction.reply({ content: "Yikes! :scream: Somethin' went **horribly** wrong tryna run this command!", ephemeral: true })
+
+            if (interaction.replied) {
+                interaction.followUp({ content: this._commandErrorMessage + this._ownerContact, ephemeral: interaction.ephemeral })
+            } else if (interaction.deferred) {
+                interaction.editReply(this._commandErrorMessage + this._ownerContact)
+            } else {
+                interaction.reply({ content: this._commandErrorMessage + this._ownerContact, ephemeral: true })
+            }
         }
     }
 
-    async _load() {
+    async _register() {
+        console.log(`Registering "${this.guild.name}" commands.`)
+
         const commands = this.map
         const body = []
 
-        for (const commandClass of await commandClasses) {
+        /* build body for registering slash commands to the guild */
+
+        for (const commandClass of await gettingCommandClasses) {
             const command = new commandClass(this.client)
             commands.set(command.config.name, command)
 
@@ -82,20 +121,11 @@ class GuildCommandsManager {
                 continue
             }
 
-            const slashCommand = new SlashCommandBuilder()
-                .setName(command.config.name)
-                .setDescription(command.config.description.substring(0, 100))
-
-            if (command.buildSlashCommand) {
-                command.buildSlashCommand(slashCommand)
-            }
-
-            body.push(slashCommand.toJSON())
+            const { name, description, options } = command.config
+            body.push({ name, description, options })
         }
-        
-        await new REST({ version: '9' })
-            .setToken(process.env.TOKEN)
-            .put(Routes.applicationGuildCommands(process.env.CLIENT_ID, this.guild.id), { body })
+
+        await this.guild.commands.set(body)
     }
 }
 

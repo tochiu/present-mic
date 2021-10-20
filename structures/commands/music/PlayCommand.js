@@ -1,42 +1,50 @@
-const unescape = require("unescape")
-const { MessageEmbed } = require("discord.js")
+const unescape = require('unescape')
+const { MessageEmbed } = require('discord.js')
 
 const BaseCommand = require('../BaseCommand')
-const { formatSeconds } = require("../util")
+const { formatSeconds } = require('../util')
 
-const { colorPrimary } = require("../../../config.json")
+const { colorPrimary } = require('../../../config.json')
 
 module.exports = class PlayCommand extends BaseCommand {
     constructor(client) {
         super(client, {
-            name: 'play',
-            aliases: ['p'],
-            group: 'music',
-            memberName: 'play',
-            description: 'Search and queue up an item. Direct YouTube video and playlist links are supported.',
+            name: "play",
+            description: "Search and queue up an item. Direct YouTube video and playlist links are supported.",
+            options: [
+                {
+                    name: "query",
+                    type: "STRING",
+                    description: "YouTube search query",
+                    required: true
+                }
+            ],
             throttling: {
                 usages: 60,
                 duration: 60
-            },
-            guildOnly: true
+            }
         })
-    }
-
-    buildSlashCommand(slashCommandBuilder) {
-        slashCommandBuilder.addStringOption(option => option.setName("query").setDescription("YouTube search query").setRequired(true))
     }
     
     async run(interaction, manager) {
-        
-        const query = interaction.options.getString("query").trim() // message.argString.trim()
+        /* abort if query is nothing */
+        const query = interaction.options.getString("query").trim()
         if (!query) {
             interaction.reply({ content: ":pinched_fingers: Gimme somethin' that makes sense kiddo!", ephemeral: true })
             return
         }
+
+        /* abort if cant play */
+        let result = manager.music.canPlay(interaction.member.voice.channel)
+        if (!result.success) {
+            interaction.reply({ content: result.reason, ephemeral: true })
+            return
+        }
+
+        /* defer */
+        const deferring = interaction.deferReply()
         
-        const deferring = interaction.deferReply({ ephemeral: true })
-        
-        let result
+        /* attempt to query and play */
         try {
             result = await manager.music.play(query, interaction.member.voice.channel, interaction.member)
         } catch(e) {
@@ -44,20 +52,18 @@ module.exports = class PlayCommand extends BaseCommand {
             result = {
                 success: false,
                 reason: e.code === "VOICE_JOIN_CHANNEL" 
-                    ? "I was blocked from joining ya channel! :sob: Make sure I got proper access!" 
+                    ? "I was blocked from joining ya channel! :sob: Make sure I have proper access!" 
                     : "Ask again later my mic is acting up!"
             }
         }
 
         if (result.success) {
-            interaction.editReply(`Your request has been honored boss!`)
-
-            if (result.items.length === 1) {
+            if (result.items.length === 1) { /* exactly one item was queued */
                 const item = result.items[0]
-                if (result.isPlayingNow) {
+                if (result.isPlayingNow) { /* that one item is current playing => print now playing message */
                     await deferring
-                    interaction.followUp(`**Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**`)
-                } else {
+                    interaction.editReply(`**Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**`)
+                } else { /* that one item is not currently playing so it must be in queue => print item queue info */
                     const embed = new MessageEmbed()
                     embed.setColor(colorPrimary)
                     embed.setAuthor("Performance Queued")
@@ -69,9 +75,9 @@ module.exports = class PlayCommand extends BaseCommand {
                     embed.addField("Queue Position", (result.itemsStart + 1).toString())
 
                     await deferring
-                    interaction.followUp({ embeds: [embed] })
+                    interaction.editReply({ embeds: [embed] })
                 }
-            } else {
+            } else { /* multiple items were queued => print multi-item queue info */
                 const embed = new MessageEmbed()
                 embed.setColor(colorPrimary)
                 embed.setAuthor("Performance Set Queued")
@@ -81,9 +87,9 @@ module.exports = class PlayCommand extends BaseCommand {
                 embed.addField("Queue Position", result.isPlayingNow ? "_Now Performing_" : (result.itemsStart + 1).toString())
 
                 await deferring
-                interaction.followUp({ embeds: [embed] })
+                interaction.editReply({ embeds: [embed] })
             }
-        } else {
+        } else { /* the play operation failed to complete */
             await deferring
             interaction.editReply(result.reason)
         }

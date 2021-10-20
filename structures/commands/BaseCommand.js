@@ -1,28 +1,39 @@
-/*
-    const { escapeMarkdown } = require('discord.js')
-
-    const owners = this.client.owners;
-    const ownerList = owners ? owners.map((usr, i) => {
-        const or = i === owners.length - 1 && owners.length > 1 ? 'or ' : '';
-        return `${or}${escapeMarkdown(usr.username)}#${usr.discriminator}`;
-    }).join(owners.length > 2 ? ', ' : ' ') : '';
-    const invite = this.client.options.invite;
-    
-    return message.reply(
-        `Yikes! :scream: Somethin' went horribly wrong tryna run a command!` + 
-        `\nI dunno try again or phone in ${ownerList || 'the bot owner'}${invite ? ` in this server: ${invite}` : '.'}`
-    )
-*/
-
 class BaseCommand {
     constructor(client, config) {
         this.client = client
         this.config = config
+
+        this.usages = 0
+        this.timestamp = 0
     }
 
-    onError(e, interaction) {
-        console.error(e)
-        return interaction.reply({ content: "Yikes! :scream: Somethin' went horribly wrong tryna run this command!", ephemeral: true })
+    async run() {
+        console.log("BaseCommand ran!")
+    }
+
+    async handle(interaction, manager) {
+        /* check rate limit */
+        if (this.config.throttling) {
+            const { usages, duration } = this.config.throttling
+
+            if ((Date.now() - this.timestamp)/1000 > duration) {
+                this.usages = 0
+                this.timestamp = Date.now()
+            }
+
+            if (this.usages >= usages) {
+                interaction.reply({
+                    content: `This command has been used too many times! :raised_hand: Try again in ${Math.ceil(duration - (Date.now() - this.timestamp))} seconds.`, 
+                    ephemeral: true
+                })
+                return
+            }
+
+            this.usages++
+        }
+
+        /* run command */
+        await this.run(interaction, manager)
     }
 }
 

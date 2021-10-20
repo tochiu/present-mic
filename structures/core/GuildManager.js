@@ -1,6 +1,9 @@
 const GuildMusicManager = require('../music/GuildMusicManager')
 const GuildCommandsManager = require('../commands/GuildCommandsManager')
 
+/**
+ * Manages a single guild
+ */
 class GuildManager {
 
     static managers = new Map()

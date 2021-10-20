@@ -1,50 +1,35 @@
-const unescape = require("unescape")
+const unescape = require('unescape')
 
 const BaseCommand = require('../BaseCommand')
+const { parseRanges } = require('../util')
 
 module.exports = class RemoveCommand extends BaseCommand {
     constructor(client) {
         super(client, {
-            name: 'remove',
-            aliases: ['r'],
-            group: 'music',
-            memberName: 'remove',
-            description: 'Removes an item in the queue. Comma-separated indexes or index ranges are supported.',
+            name: "remove",
+            description: "Remove items in the queue. Comma-separated indexes or index ranges are supported.",
+            options: [
+                {
+                    name: "positions",
+                    type: "STRING",
+                    description: "Queue positions (ex: 4, 8-12, 16, 20-24)",
+                    required: true
+                }
+            ],
             throttling: {
                 usages: 2,
                 duration: 1
-            },
-            guildOnly: true
+            }
         })
     }
 
-    buildSlashCommand(slashCommandBuilder) {
-        slashCommandBuilder.addStringOption(option => option.setName("positions").setDescription("Queue positions").setRequired(true))
-    }
-    
     async run(interaction, manager) {
-        const removed = manager.music.remove(
-            interaction.options
-                .getString("positions")
-                .trim()
-                .split(",")
-                .map(rangeStr => rangeStr
-                    .split("-")
-                    .map(num => parseInt(num))
-                    .filter(num => !isNaN(num) && num > 0)
-                )
-                .map(range => {
-                    const a = range[0]
-                    const b = range[range.length - 1]
-
-                    if (a && b) {
-                        return [Math.min(a, b) - 1, Math.max(a, b) - (Math.min(a, b) - 1)]
-                    }
-                })
-                .filter(splice => splice)
-                .sort((a, b) => b[0] - a[0])
-        )
         
+        const removed = manager.music.remove(
+            parseRanges(interaction.options.getString("positions"))
+                .sort((a, b) => b[0] - a[0]) /* sort ranges in descending order of the starting index to preserve indexes after each remove operation */
+        )
+
         if (removed.length === 0) {
             interaction.reply({ content: `Go get your eyes checked! :anger: I ain't find nothin!'`, ephemeral: true })
         } else if (removed.length === 1) {

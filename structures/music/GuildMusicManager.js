@@ -1,22 +1,15 @@
-const { toSeconds, parse } = require("iso8601-duration")
 const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice')
+const { toSeconds, parse } = require("iso8601-duration")
 
 const MusicSearcher = require("./MusicSearcher")
 const MusicPlayer = require("./MusicPlayer")
 
 const { maxQueueItems } = require("../../config.json")
 
-const MEMBER_VOICE_CHANNEL_STATE = {
-    JOINING: 0,
-    LEAVING: 1,
-    CHANGING: 2
-}
-
-const EMPTY_STATE = { 
-	playing: undefined, 
-	queue: [] 
-}
-
+/**
+ * A GuildMusicManager exists for each GuildManager. Playback, joining, disconnecting and queue state management for
+ * a guild are exclusively executed here.
+ */
 class GuildMusicManager {
 
 	constructor(guild, client) {
@@ -26,35 +19,22 @@ class GuildMusicManager {
 		this._searcher = new MusicSearcher()
 		this._player = undefined
 
+		/* if a voice connection already exists then destroy it */
+
 		const connection = getVoiceConnection(guild.id)
         if (connection) {
             connection.destroy()
         }
 	}
-	
+
 	async play(query, channel, requester) {
-		const player = this._getMusicPlayer(channel)
-		if (!player) {
-			return {
-				success: false,
-				reason: "What'cha doin' asking for tunes? :face_with_raised_eyebrow: You're not even in a voice channel!"
-			}
-		}
 
 		console.log(`Searching: ${query}`)
 
-		/* check if theres space before querying */
-		let maxItems = maxQueueItems - player.getState().queue.length
-		if (maxItems <= 0) {
-			return {
-				success: false,
-				reason: `The queue already contains \`${maxQueueItems}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
-			}
-		}
-
+		/* attempt to search using query */
 		let items
 		try {
-			items = (await this._searcher.search(query)).filter(item => item.status.embeddable && item.contentDetails.contentRating.ytRating !== "ytAgeRestricted")
+			items = await this._searcher.search(query)
 		} catch(e) {
 			console.error(e)
 			return {
@@ -63,16 +43,17 @@ class GuildMusicManager {
 			}
 		}
 
-		/* update space remaining since we awaited for the search query to complete */
-		maxItems = maxQueueItems - player.getState().queue.length
-		if (maxItems <= 0) {
-			return {
-				success: false,
-				reason: `The queue already contains \`${maxQueueItems}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
-			}
-		}
-
 		if (items.length > 0) {
+			/* check if we can play tracks */
+			const canPlayResult = this.canPlay(channel)
+			if (!canPlayResult.success) {
+				return canPlayResult
+			}
+			
+			const player = this._getMusicPlayer(channel)
+			const maxItems = maxQueueItems - player.getState().queue.length
+
+			/* cut items over the maxQueueItem limit */
 			if (items.length > maxItems) {
 				items.splice(maxItems, items.length - maxItems)
 			}
@@ -82,6 +63,7 @@ class GuildMusicManager {
 			const queueBefore = state.queue
 			const playingBeforeTimestamp = state.playTimestamp
 
+			/* attach additional data to each item */
 			for (const item of items) {
 
 				console.log(`Found "${item.snippet.title}" - link: https://www.youtube.com/watch?v=${item.id}`)
@@ -90,8 +72,10 @@ class GuildMusicManager {
 				item.seconds = toSeconds(parse(item.contentDetails.duration))
 			}
 			
+			/* queue items */
 			player.enqueue(items)
 
+			/* attempt to process the queue */
 			if (await player.processQueue()) {
 				return { 
 					success: true,
@@ -120,9 +104,42 @@ class GuildMusicManager {
 		}
 	}
 
+	canPlay(channel) {
+		const player = this._getMusicPlayer()
+		if (player) {
+			/* can't play if the queue is full */
+			if (maxQueueItems - player.getState().queue.length <= 0) {
+				return {
+					success: false,
+					reason: `The queue already contains \`${maxQueueItems}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
+				}
+			}
+		} else if (!channel) {
+			/* can't play if a voiceconnection isn't currently active and a channel to join isn't supplied */
+			return {
+				success: false,
+				reason: "What'cha doin' asking for tunes? :face_with_raised_eyebrow: You're not even in a voice channel!"
+			}
+		}
+
+		return {
+			success: true
+		}
+	}
+
 	getState() {
 		const player = this._getMusicPlayer()
-		return player ? player.getState() : EMPTY_STATE
+		return player ? player.getState() : {
+			playing: undefined,
+			queue: []
+		}
+	}
+
+	enqueue(list, index) {
+		const player = this._getMusicPlayer()
+		if (player) {
+			return player.enqueue(list, index)
+		}
 	}
 
 	remove(spliceList) {
@@ -138,42 +155,11 @@ class GuildMusicManager {
 	}
 
 	clear() {
-		console.log("Clearing")
 		const player = this._getMusicPlayer()
 		if (player) {
 			player.clear()
 		}
 	}
-
-	updateMemberVoiceState(oldState, newState) {
-        if (!oldState) {
-            oldState = {
-                channelId: undefined
-            }
-        }
-        if (newState.channelId === oldState.channelId) {
-            return
-        }
-        
-        let channelState = 
-            (!oldState.channelId ? MEMBER_VOICE_CHANNEL_STATE.JOINING :
-                (!newState.channelId ? MEMBER_VOICE_CHANNEL_STATE.LEAVING :
-                    MEMBER_VOICE_CHANNEL_STATE.CHANGING)) 
-        
-        let isLeaveAction = 
-            channelState === MEMBER_VOICE_CHANNEL_STATE.LEAVING || 
-            channelState === MEMBER_VOICE_CHANNEL_STATE.CHANGING
-        
-        if (newState.member.user.id === this.client.user.id) {
-            if (isLeaveAction) {
-                this._updateClientVoiceStateLeave()
-            }
-        }
-    }
-
-	_updateClientVoiceStateLeave() {
-        this.clear()
-    }
 
 	_getMusicPlayer(channel) {
 		let connection = getVoiceConnection(this.guild.id)
@@ -185,6 +171,7 @@ class GuildMusicManager {
 					adapterCreator: channel.guild.voiceAdapterCreator,
 				})
 				connection.on("error", console.error)
+				//connection.on("stateChange", console.error)
 			} else {
 				return
 			}

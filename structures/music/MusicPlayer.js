@@ -24,7 +24,7 @@ class MusicPlayer {
         this._queueLock = false
 	    this._readyLock = false
 
-		this._voiceConnection.on('stateChange', async (_, newState) => {
+		this._voiceConnection.on("stateChange", async (_, newState) => {
 			if (newState.status === VoiceConnectionStatus.Disconnected) {
 				if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
 					/*
@@ -80,30 +80,18 @@ class MusicPlayer {
 			}
 		})
 
-		/*
-			Listen for audioPlayer state changes
-		*/
-		this._audioPlayer.on('stateChange', (oldState, newState) => {
-			/*
-				Attempt to process queue if player is idle
-			*/
+		/* Listen for audioPlayer state changes */
+		this._audioPlayer.on("stateChange", (oldState, newState) => {
+			/* Attempt to process queue if player is idle */
 			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
 				console.log("Playback complete!")
 				this.processQueue()
 			}
-
-			/*
-				Destroy old resource metadata if it exists and is no longer in use
-			*/
-			// if (oldState.resource && oldState.resource !== newState.resource) {
-			// 	this._destroyResourceMetadata(oldState.resource)
-			// }
 		})
 
-		this._audioPlayer.on('error', e => {
+		this._audioPlayer.on("error", e => {
 			console.error("Playback error!")
 			console.error(e)
-			//this._destroyResourceMetadata(e.resource)
 			this.processQueue()
 		})
 
@@ -111,11 +99,14 @@ class MusicPlayer {
 	}
 
 	getVoiceConnection() {
+		/* return voice connection */
 		return this._voiceConnection
 	}
 
 	getState() {
 		const resource = this._audioPlayer.state.resource
+
+		/* return state */
 		return {
 			queue: [...this._queue],
 			playing: resource && resource.metadata.track,
@@ -123,86 +114,63 @@ class MusicPlayer {
 		}
 	}
 
-	/**
-	 * Skips
-	 */
 	skip() {
 		this._audioPlayer.stop(true)
 	}
 
-	/**
-	 * Adds tracks to the queue.
-	 */
-	enqueue(tracks) {
-		this._queue.splice(this._queue.length, 0, ...tracks)
+	enqueue(tracks, index) {
+		index = index === undefined ? this._queue.length : Math.max(0, Math.min(this._queue.length, index))
+		this._queue.splice(index, 0, ...tracks)
+
+		/* return insert index */
+		return index
 	}
 
-	/**
-	 * Removes tracks from the queue.
-	 */
 	remove(spliceList) {
 		const removed = []
 		for (const [index, amount] of spliceList) {
 			removed.push(this._queue.splice(index, amount))
 		}
+
+		/* return removed tracks */
 		return [].concat(...removed)
 	}
 
-	/**
-	 * Stops audio playback and empties the queue
-	 */
 	clear() {
 		this._queue = []
 		this._audioPlayer.stop(true)
 	}
 
-	/**
-	 * Stops audio playback and empties the queue
-	 */
 	destroy() {
 		console.log("Destroying player")
 		this._queueLock = true
 		this.clear()
 	}
 
-	/**
-	 * Destroy old resource metadata
-	 */
-	// _destroyResourceMetadata(resource) {
-	// 	const stream = resource.metadata.stream
-	// 	if (!stream.destroyed) {
-	// 		stream.destroy()
-	// 	}
-	// }
-	
-	/**
-	 * Attempts to play a Track from the queue
-	 */
 	async processQueue() {
-		// If the queue is locked (already being processed) or the audio player is already playing something, return
+		/* If the queue is locked (already being processed) or the audio player is already playing something, return */
 		if (this._queueLock || this._audioPlayer.state.status !== AudioPlayerStatus.Idle) {
+			/* return true because we don't need to process the queue right now, which counts as a success */
 			return true
 		}
 
-		// If the queue is empty return
+		/* If the queue is empty return */
 		if (this._queue.length === 0) {
 			return false
 		}
 
-		// Lock the queue to guarantee safe access
+		/* Lock the queue to guarantee safe access */
 		this._queueLock = true
 
-		// Take the first item from the queue. This is guaranteed to exist due to the non-empty check above.
+		/* Take the first item from the queue. This is guaranteed to exist due to the non-empty check above. */
 		const track = this._queue.shift()
 
 		try {
 
 			console.log(`Playing "${track.snippet.title}" - link: https://www.youtube.com/watch?v=${track.id}`)
 
-			// Attempt to convert the Track into an AudioResource (i.e. start streaming the video)
-			//const stream = ytdl(`https://www.youtube.com/watch?v=${track.id}`, {filter: "audioonly", quality: "highestaudio", highWaterMark: 1 << 25})
-			//const resource = createAudioResource(stream, { metadata: { stream, track, timestamp: Date.now() }})
-
+			/* Attempt to convert the Track into an AudioResource */
+			
 			const stream = await playdl.stream(`https://www.youtube.com/watch?v=${track.id}`)
 			const resource = createAudioResource(stream.stream, {
 				inputType: stream.type,
@@ -212,13 +180,16 @@ class MusicPlayer {
 				}
 			})
 
-			//playdl.attachListeners(this._audioPlayer, stream)
-			
+			/* Stream the AudioResource and unlock the queue */
+
 			this._audioPlayer.play(resource)
 			this._queueLock = false
 			return true
+
 		} catch (e) {
-			// If an error occurred, try the next item of the queue instead
+
+			/* If an error occurred, unlock the queue try the next item of the queue instead */
+
 			console.error(e)
 			this._queueLock = false
 			return await this.processQueue()

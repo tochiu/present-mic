@@ -6,10 +6,8 @@ const BaseCommand = require('../BaseCommand')
 module.exports = class NerdCommand extends BaseCommand {
     constructor(client) {
         super(client, {
-            name: 'nerd',
-            group: 'misc',
-            memberName: 'nerd',
-            description: 'Debug data for nerds',
+            name: "nerd",
+            description: "Generate a voice debug report for nerds.",
             throttling: {
                 usages: 1,
                 duration: 1
