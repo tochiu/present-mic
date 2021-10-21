@@ -22,9 +22,9 @@ class GuildMusicManager {
 		/* if a voice connection already exists then destroy it */
 
 		const connection = getVoiceConnection(guild.id)
-        if (connection) {
-            connection.destroy()
-        }
+		if (connection) {
+			connection.destroy()
+		}
 	}
 
 	async play(query, channel, requester) {
@@ -35,7 +35,7 @@ class GuildMusicManager {
 		let items
 		try {
 			items = await this._searcher.search(query)
-		} catch(e) {
+		} catch (e) {
 			console.error(e)
 			return {
 				success: false,
@@ -49,7 +49,7 @@ class GuildMusicManager {
 			if (!canPlayResult.success) {
 				return canPlayResult
 			}
-			
+
 			const player = this._getMusicPlayer(channel)
 			const maxItems = maxQueueItems - player.getState().queue.length
 
@@ -57,7 +57,7 @@ class GuildMusicManager {
 			if (items.length > maxItems) {
 				items.splice(maxItems, items.length - maxItems)
 			}
-			
+
 			const state = player.getState()
 			const playingBefore = state.playing
 			const queueBefore = state.queue
@@ -71,28 +71,28 @@ class GuildMusicManager {
 				item.requester = requester
 				item.seconds = toSeconds(parse(item.contentDetails.duration))
 			}
-			
+
 			/* queue items */
 			player.enqueue(items)
 
 			/* attempt to process the queue */
 			if (await player.processQueue()) {
-				return { 
+				return {
 					success: true,
-	
+
 					isPlayingNow: !playingBefore && queueBefore.length === 0,
-					
-					currentDurationLeft: playingBefore && playingBeforeTimestamp ? Math.max(0, playingBefore.seconds - (Date.now() - playingBeforeTimestamp)/1000) : 0,
+
+					currentDurationLeft: playingBefore && playingBeforeTimestamp ? Math.max(0, playingBefore.seconds - (Date.now() - playingBeforeTimestamp) / 1000) : 0,
 					queueBeforeDuration: queueBefore.reduce((duration, item) => duration + item.seconds, 0),
-	
+
 					itemsStart: queueBefore.length,
 					itemsDuration: items.reduce((duration, item) => duration + item.seconds, 0),
 					items
 				}
 			} else {
-				return { 
-					success: false, 
-					reason: `I came across an issue queueing up your result${items.length > 1 ? "s" : ""} for playback! :man_shrugging:` 
+				return {
+					success: false,
+					reason: `I came across an issue queueing up your result${items.length > 1 ? "s" : ""} for playback! :man_shrugging:`
 				}
 			}
 		} else {

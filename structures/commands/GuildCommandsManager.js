@@ -38,12 +38,12 @@ const gettingCommandClasses = (async () => {
  * for a guild are exclusively executed here.
  */
 class GuildCommandsManager {
-    
+
     constructor(guild, client) {
         this.client = client
         this.guild = guild
         this.map = new Map()
-        
+
         this._ownerContact = ""
         this._commandErrorMessage = "Yikes! :scream: Somethin' went **horribly** wrong tryna run this command!"
 
@@ -78,7 +78,7 @@ class GuildCommandsManager {
                     })
             })
     }
-    
+
     async handle(interaction, manager) {
         /* abort if not valid command */
         const command = this.map.get(interaction.commandName)
@@ -86,7 +86,7 @@ class GuildCommandsManager {
             interaction.reply({ content: "Sorry! :man_shrugging: I don't know how to execute this command!", ephemeral: true })
             return
         }
-        
+
         /* execute command */
         try {
             await command.handle(interaction, manager)

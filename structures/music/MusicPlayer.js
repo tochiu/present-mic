@@ -16,13 +16,13 @@ const wait = promisify(setTimeout)
  * and it also attaches logic to the audio player and voice connection for error handling and reconnection logic.
  */
 class MusicPlayer {
-	
+
 	constructor(voiceConnection) {
 		this._voiceConnection = voiceConnection
 		this._audioPlayer = createAudioPlayer()
 		this._queue = []
-        this._queueLock = false
-	    this._readyLock = false
+		this._queueLock = false
+		this._readyLock = false
 
 		this._voiceConnection.on("stateChange", async (_, newState) => {
 			if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -170,13 +170,13 @@ class MusicPlayer {
 			console.log(`Playing "${track.snippet.title}" - link: https://www.youtube.com/watch?v=${track.id}`)
 
 			/* Attempt to convert the Track into an AudioResource */
-			
+
 			const stream = await playdl.stream(`https://www.youtube.com/watch?v=${track.id}`)
 			const resource = createAudioResource(stream.stream, {
 				inputType: stream.type,
-				metadata: { 
-					track, 
-					timestamp: Date.now() 
+				metadata: {
+					track,
+					timestamp: Date.now()
 				}
 			})
 

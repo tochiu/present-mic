@@ -25,7 +25,7 @@ module.exports = class PlayCommand extends BaseCommand {
             }
         })
     }
-    
+
     async run(interaction, manager) {
         /* abort if query is nothing */
         const query = interaction.options.getString("query").trim()
@@ -43,16 +43,16 @@ module.exports = class PlayCommand extends BaseCommand {
 
         /* defer */
         const deferring = interaction.deferReply()
-        
+
         /* attempt to query and play */
         try {
             result = await manager.music.play(query, interaction.member.voice.channel, interaction.member)
-        } catch(e) {
+        } catch (e) {
             console.error(e)
             result = {
                 success: false,
-                reason: e.code === "VOICE_JOIN_CHANNEL" 
-                    ? "I was blocked from joining ya channel! :sob: Make sure I have proper access!" 
+                reason: e.code === "VOICE_JOIN_CHANNEL"
+                    ? "I was blocked from joining ya channel! :sob: Make sure I have proper access!"
                     : "Ask again later my mic is acting up!"
             }
         }

@@ -13,7 +13,7 @@ module.exports = class DisconnectCommand extends BaseCommand {
             }
         })
     }
-    
+
     async run(interaction, manager) {
         const connection = getVoiceConnection(manager.guild.id)
         if (connection) {

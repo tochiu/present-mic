@@ -16,14 +16,14 @@ class BaseCommand {
         if (this.config.throttling) {
             const { usages, duration } = this.config.throttling
 
-            if ((Date.now() - this.timestamp)/1000 > duration) {
+            if ((Date.now() - this.timestamp) / 1000 > duration) {
                 this.usages = 0
                 this.timestamp = Date.now()
             }
 
             if (this.usages >= usages) {
                 interaction.reply({
-                    content: `This command has been used too many times! :raised_hand: Try again in \`${Math.ceil(duration - (Date.now() - this.timestamp)/1000)}\` seconds.`, 
+                    content: `This command has been used too many times! :raised_hand: Try again in \`${Math.ceil(duration - (Date.now() - this.timestamp) / 1000)}\` seconds.`,
                     ephemeral: true
                 })
                 return

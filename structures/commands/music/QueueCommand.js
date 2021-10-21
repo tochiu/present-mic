@@ -10,7 +10,7 @@ const placeholder = "⠀" /* field titles and values cannot be empty or whitespa
 
 /* return a description string based on the queue item and index */
 function getQueueItemDescription(item, index) {
-    
+
     return `${index ? `\`${index}.\` ` : ""}` /* queue position */
         + `[${unescape(item.snippet.title)}](https://www.youtube.com/watch?v=${item.id})` /* item title and hyperlink */
         + ` | \`${formatSeconds(item.seconds)}` /* formatted time */
@@ -32,7 +32,7 @@ function spliceEmbedFields(embed) {
 
         if (len > maxLen) {
             if (len > 6000) {
-                if (name.length > 6000 ) {
+                if (name.length > 6000) {
                     name = name.substr(0, 6000 - 4) + "..."
                     value = placeholder
                 } else {
@@ -94,7 +94,7 @@ module.exports = class QueueCommand extends BaseCommand {
             }
         })
     }
-    
+
     async run(interaction, manager) {
         /* abort if nothing playing or in queue */
         const { playing, queue } = manager.music.getState()

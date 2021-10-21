@@ -7,14 +7,14 @@ const GAPI_KEYS = []
 
 /* populate api key rotation array */
 {
-    let index = 0
-    let lastKey = process.env["GAPI_KEY_" + index]
+	let index = 0
+	let lastKey = process.env["GAPI_KEY_" + index]
 
-    while (lastKey) {
-        GAPI_KEYS[index] = lastKey
-        index++
-        lastKey = process.env["GAPI_KEY_" + index]
-    }
+	while (lastKey) {
+		GAPI_KEYS[index] = lastKey
+		index++
+		lastKey = process.env["GAPI_KEY_" + index]
+	}
 }
 
 /**
@@ -25,21 +25,21 @@ const GAPI_KEYS = []
  */
 class MusicSearcher {
 
-    constructor() {
-        this._keys = [...GAPI_KEYS]
-    }
+	constructor() {
+		this._keys = [...GAPI_KEYS]
+	}
 
 	/*
 		search YouTube for results given a query string
 	*/
-    search(query) {
+	search(query) {
 		const auth = this._nextKey()
 
 		/* attempt to parse the query as a url */
 		const q = url.parse(query, true)
 
 		let request
-		
+
 		/* parse as YouTube url if url.parse detects youtube in the hostname */
 		if (q.host && q.host.includes("youtube")) {
 			if (q.pathname === "/watch" && q.query.v) {
@@ -51,12 +51,12 @@ class MusicSearcher {
 					part: "snippet",
 					playlistId: q.query.list,
 					maxResults: 50,
-                    auth
+					auth
 				}).then(result => this._queryVideos(
 					result.data.items
 						.filter(item => item.snippet.resourceId.videoId)
 						.map(item => item.snippet.resourceId.videoId),
-                    auth
+					auth
 				))
 			}
 		}
@@ -73,10 +73,10 @@ class MusicSearcher {
 				auth
 			}).then(result => this._queryVideos(result.data.items.map(item => item.id.videoId), auth))
 		}
-		
+
 		return request.then(items => items.filter(item => item.status.embeddable && item.contentDetails.contentRating.ytRating !== "ytAgeRestricted"))
 	}
-	
+
 	/* 
 		query video data from YouTube 
 	*/
@@ -84,7 +84,7 @@ class MusicSearcher {
 		return youtube.videos.list({
 			part: "id,snippet,status,contentDetails",
 			id: ids.join(','),
-            auth
+			auth
 		}).then(result => result.data.items)
 	}
 
@@ -96,7 +96,7 @@ class MusicSearcher {
 			this._keys = [...GAPI_KEYS]
 		}
 
-		return this._keys.splice(Math.floor(this._keys.length*Math.random()), 1)[0]
+		return this._keys.splice(Math.floor(this._keys.length * Math.random()), 1)[0]
 	}
 }
 

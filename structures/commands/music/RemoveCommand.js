@@ -24,7 +24,7 @@ module.exports = class RemoveCommand extends BaseCommand {
     }
 
     async run(interaction, manager) {
-        
+
         const removed = manager.music.remove(
             parseRanges(interaction.options.getString("positions"))
                 .sort((a, b) => b[0] - a[0]) /* sort ranges in descending order of the starting index to preserve indexes after each remove operation */
