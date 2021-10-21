@@ -55,6 +55,7 @@ client.once("ready", () => {
 
 client.on("error", console.error)
 client.on("guildCreate", guild => GuildManager.register(guild, client))
+client.on("guildDelete", guild => GuildManager.unregister(guild))
 client.on("interactionCreate", async interaction => {
     /* 
         we only care about commands in guilds 

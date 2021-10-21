@@ -16,6 +16,15 @@ class GuildManager {
         GuildManager.managers.set(guild.id, new GuildManager(guild, client))
     }
 
+    static unregister(guild) {
+        if (GuildManager.managers.has(guild.id)) {
+            console.log(`Unregistering Guild "${guild.name}" <${guild.id}>`)
+
+            /* currently no additional work is required */
+            GuildManager.managers.delete(guild.id)
+        }
+    }
+
     constructor(guild, client) {
         this.guild = guild
         this.client = client
