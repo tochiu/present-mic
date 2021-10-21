@@ -23,7 +23,7 @@ class BaseCommand {
 
             if (this.usages >= usages) {
                 interaction.reply({
-                    content: `This command has been used too many times! :raised_hand: Try again in ${Math.ceil(duration - (Date.now() - this.timestamp))} seconds.`, 
+                    content: `This command has been used too many times! :raised_hand: Try again in \`${Math.ceil(duration - (Date.now() - this.timestamp)/1000)}\` seconds.`, 
                     ephemeral: true
                 })
                 return
