@@ -1,3 +1,4 @@
+const { Permissions } = require('discord.js')
 const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice')
 const { toSeconds, parse } = require("iso8601-duration")
 
@@ -119,6 +120,14 @@ class GuildMusicManager {
 			return {
 				success: false,
 				reason: "What'cha doin' asking for tunes? :face_with_raised_eyebrow: You're not even in a voice channel!"
+			}
+		} else {
+			const permissions = channel.permissionsFor(this.client.user)
+			if (!permissions || !permissions.has(Permissions.FLAGS.CONNECT) || !permissions.has(Permissions.FLAGS.SPEAK)) {
+				return {
+					success: false,
+					reason: `I don't have the right permissions to join \`#${channel.name}\`! :scream: Let me in!!!`
+				}
 			}
 		}
 
