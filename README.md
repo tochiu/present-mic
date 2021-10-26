@@ -12,15 +12,15 @@ Click [here](https://discord.com/api/oauth2/authorize?client_id=8981043353874677
 
 ## Slash Commands ##
 
- * **`play [query]`**: Search YouTube for `query` and queue up the first result found. Direct YouTube video and playlist links are supported.
- * **`remove [positions]`**: Remove items in the queue at the specified positions. `positions` must be a comma-separated list of either a specific position or inclusive range (ex: `4, 8-12, 16, 20-24`).
- * **`move [position] [new_position]`**: Moves items at `position` to `new_position`. `position` can be a range but `new_position` cannot (ex: `8-12, 4`).
- * **`skip`**: Skip the now playing item
- * **`clear`**: Remove all items from the queue and stop playback
- * **`queue`**: Display the queue
- * **`disconnect`**: Disconnect the bot from the voice channel
- * **`invite`**: Generate a link to invite the bot to a server
- * **`nerd`**: Generate a dependency report of audio-relevant technologies
+ - **`play [query]`**: Search YouTube for `query` and queue up the first result found. Direct YouTube video and playlist links are supported.
+ - **`remove [positions]`**: Remove items in the queue at the specified positions. `positions` must be a comma-separated list of either a specific position or inclusive range (ex: `4, 8-12, 16, 20-24`).
+ - **`move [position] [new_position]`**: Moves items at `position` to `new_position`. `position` can be a range but `new_position` cannot (ex: `8-12, 4`).
+ - **`skip`**: Skip the now playing item
+ - **`clear`**: Remove all items from the queue and stop playback
+ - **`queue`**: Display the queue
+ - **`disconnect`**: Disconnect the bot from the voice channel
+ - **`invite`**: Generate a link to invite the bot to a server
+ - **`nerd`**: Generate a dependency report of audio-relevant technologies
 
   
 
@@ -61,10 +61,10 @@ If you don't already have a method of pushing environment variables to this appl
 
 The following environment variables are required:
 
- * `PERMISSIONS_INT`: Set this to `274914692096`. This represents the permissions the bot needs from Discord to function.
- * `CLIENT_ID`: This is the ID of the bot and is found in your bot's application.
- * `TOKEN`: This is what is required to log into a Discord bot. This is also found in your bot's application. **This is very sensitive information and cannot be disclosed to anyone.**
- * `GAPI_KEY_0`, `GAPI_KEY_1`, `GAPI_KEY_2`, ... : This are the API keys used to access Google's YouTube Data API v3. If multiple API keys are supplied then they will be used in a randomized rotating order. This is only useful if each API key consumes separate qoutas. 
+ - `PERMISSIONS_INT`: Set this to `274914692096`. This represents the permissions the bot needs from Discord to function.
+ - `CLIENT_ID`: This is the ID of the bot and is found in your bot's application.
+ - `TOKEN`: This is what is required to log into a Discord bot. This is also found in your bot's application. **This is very sensitive information and cannot be disclosed to anyone.**
+ - `GAPI_KEY_0`, `GAPI_KEY_1`, `GAPI_KEY_2`, ... : This are the API keys used to access Google's YouTube Data API v3. If multiple API keys are supplied then they will be used in a randomized rotating order. This is only useful if each API key consumes separate qoutas. 
  
 ### Invite ###
 
