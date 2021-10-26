@@ -1,13 +1,13 @@
 /* detect production or dev build */
 
-console.log(`${process.env.NODE_ENV === "PRODUCTION" ? "Production" : "Development"} Environment Detected`)
+console.log(`${process.env.NODE_ENV === "production" ? "Production" : "Development"} Environment Detected`)
 
 /* attempt to load environment variables from dotenv */
 
 try {
     require("dotenv").config()
 } catch(e) {
-    if (process.env.NODE_ENV !== "PRODUCTION") {
+    if (process.env.NODE_ENV !== "production") {
         console.warn("Failed to environment variables from dotenv. This isn't an issue if they are loaded in from elsewhere.")
     }
 }
