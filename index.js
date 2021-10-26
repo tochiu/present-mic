@@ -1,5 +1,8 @@
 /* detect production or dev build */
+
 console.log(`${process.env.NODE_ENV === "PRODUCTION" ? "Production" : "Development"} Environment Detected`)
+
+/* attempt to load environment variables from dotenv */
 
 try {
     require("dotenv").config()
@@ -9,20 +12,7 @@ try {
     }
 }
 
-/* HACKY AF CODE */
-/* the webm demultiplexer has a default highWaterMark of 16kB */
-/* this property was exposed in djs v12 but no longer in v13 */
-/* after backtracking through @discordjs/voice source code for creating AudioResources I found the class that builds the Transform stream and overwrote it */
-/* now the default is adjustable here */
-{
-    const prism = require("prism-media")
-    prism.opus.WebmDemuxer = class WebmDemuxerHack extends prism.opus.WebmDemuxer {
-        constructor(options = {}) {
-            super(Object.assign({ highWaterMark: 16 }, options))
-        }
-    }
-}
-/***************************************************************/
+/* requirements */
 
 const Discord = require("discord.js")
 const { generateDependencyReport } = require("@discordjs/voice")
