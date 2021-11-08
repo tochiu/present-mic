@@ -45,7 +45,7 @@ module.exports = class RemoveCommand extends BaseCommand {
         }
 
         /* we don't need to check if enqueue succeeded because the above check guarantees that a player is active => enqeue always succeeds */
-        const index = manager.music.enqueue(removed, interaction.options.getNumber("new_position") - 1)
+        const { index } = manager.music.enqueue(removed, interaction.options.getNumber("new_position") - 1)
 
         /* send success message */
         interaction.reply(`:white_check_mark: **Moved** ${removed.length === 1 ? `\`${unescape(removed[0].snippet.title)}\`` : `\`${removed.length}\` performances`} to **\`#${index + 1}\`** in the queue!`)

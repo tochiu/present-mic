@@ -73,11 +73,8 @@ class GuildMusicManager {
 				item.seconds = toSeconds(parse(item.contentDetails.duration))
 			}
 
-			/* queue items */
-			player.enqueue(items)
-
-			/* attempt to process the queue */
-			if (await player.processQueue()) {
+			/* queue items and get the process result */
+			if (await player.enqueue(items).processing) {
 				return {
 					success: true,
 
@@ -139,8 +136,16 @@ class GuildMusicManager {
 	getState() {
 		const player = this._getMusicPlayer()
 		return player ? player.getState() : {
+			looping: false,
 			playing: undefined,
 			queue: []
+		}
+	}
+
+	toggleLoop() {
+		const player = this._getMusicPlayer()
+		if (player) {
+			return player.toggleLoop()
 		}
 	}
 

@@ -23,6 +23,7 @@ class MusicPlayer {
 		this._queue = []
 		this._queueLock = false
 		this._readyLock = false
+		this._looping = false
 
 		this._voiceConnection.on("stateChange", async (_, newState) => {
 			if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -85,14 +86,14 @@ class MusicPlayer {
 			/* Attempt to process queue if player is idle */
 			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
 				console.log("Playback complete!")
-				this.processQueue()
+				this.processNext(this._looping && oldState.resource.metadata.track)
 			}
 		})
 
 		this._audioPlayer.on("error", e => {
 			console.error("Playback error!")
 			console.error(e)
-			this.processQueue()
+			this.processNext()
 		})
 
 		voiceConnection.subscribe(this._audioPlayer)
@@ -108,10 +109,16 @@ class MusicPlayer {
 
 		/* return state */
 		return {
+			looping: this._looping,
 			queue: [...this._queue],
 			playing: resource && resource.metadata.track,
 			playTimestamp: resource && resource.metadata.timestamp
 		}
+	}
+
+	toggleLoop() {
+		this._looping = !this._looping
+		return this._looping
 	}
 
 	skip() {
@@ -123,7 +130,7 @@ class MusicPlayer {
 		this._queue.splice(index, 0, ...tracks)
 
 		/* return insert index */
-		return index
+		return { index, processing: this.processNext() }
 	}
 
 	remove(spliceList) {
@@ -147,23 +154,23 @@ class MusicPlayer {
 		this.clear()
 	}
 
-	async processQueue() {
+	async processNext(track) {
 		/* If the queue is locked (already being processed) or the audio player is already playing something, return */
 		if (this._queueLock || this._audioPlayer.state.status !== AudioPlayerStatus.Idle) {
 			/* return true because we don't need to process the queue right now, which counts as a success */
 			return true
 		}
 
-		/* If the queue is empty return */
-		if (this._queue.length === 0) {
+		/* Use the specified track or take the first item from the queue. */
+		track = track || this._queue.shift()
+		
+		/* If the track doesn't exist return */
+		if (!track) {
 			return false
 		}
 
 		/* Lock the queue to guarantee safe access */
 		this._queueLock = true
-
-		/* Take the first item from the queue. This is guaranteed to exist due to the non-empty check above. */
-		const track = this._queue.shift()
 
 		try {
 
@@ -192,7 +199,7 @@ class MusicPlayer {
 
 			console.error(e)
 			this._queueLock = false
-			return await this.processQueue()
+			return await this.processNext()
 		}
 	}
 }

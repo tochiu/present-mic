@@ -15,6 +15,7 @@ Click [here](https://discord.com/api/oauth2/authorize?client_id=8981043353874677
  - **`play [query]`**: Search YouTube for `query` and queue up the first result found. Direct YouTube video and playlist links are supported.
  - **`remove [positions]`**: Remove items in the queue at the specified positions. `positions` must be a comma-separated list of either a specific position or inclusive range (ex: `4, 8-12, 16, 20-24`).
  - **`move [position] [new_position]`**: Moves items at `position` to `new_position`. `position` can be a range but `new_position` cannot (ex: `8-12, 4`).
+ - **`loop`**: Enable or disable looping
  - **`skip`**: Skip the now playing item
  - **`clear`**: Remove all items from the queue and stop playback
  - **`queue`**: Display the queue

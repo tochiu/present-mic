@@ -97,7 +97,7 @@ module.exports = class QueueCommand extends BaseCommand {
 
     async run(interaction, manager) {
         /* abort if nothing playing or in queue */
-        const { playing, queue } = manager.music.getState()
+        const { playing, queue, looping } = manager.music.getState()
         if (!playing && queue.length === 0) {
             interaction.reply({ content: "I ain't performing or planning to yet! :angry: Maybe queue somethin' up first!", ephemeral: true })
             return
@@ -111,10 +111,10 @@ module.exports = class QueueCommand extends BaseCommand {
         embed.setTitle(`Performance Queue for ${manager.guild.name}`)
 
         if (playing) {
-            embed.addField(placeholder, `__Now Performing:__\n${getQueueItemDescription(playing)}`)
+            embed.addField(placeholder, `__Now ${looping ? "Looping :repeat_one:" : "Performing"}:__\n${getQueueItemDescription(playing)}`)
 
             if (queue.length > 0) {
-                embed.addField(placeholder, ":arrow_down:__Up Next:__:arrow_down:\n")
+                embed.addField(placeholder, `:arrow_down:__${looping ? "Queue" : "Up Next"}:__:arrow_down:\n`)
             }
         }
 
