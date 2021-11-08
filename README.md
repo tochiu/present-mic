@@ -21,7 +21,7 @@ Click [here](https://discord.com/api/oauth2/authorize?client_id=8981043353874677
  - **`queue`**: Display the queue
  - **`disconnect`**: Disconnect the bot from the voice channel
  - **`invite`**: Generate a link to invite the bot to a server
- - **`nerd`**: Generate a dependency report of audio-relevant technologies
+ - **`nerd`**: Output version and generate a dependency report of audio-relevant technologies
 
   
 

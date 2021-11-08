@@ -1,7 +1,3 @@
-/* detect production or dev build */
-
-console.log(`${process.env.NODE_ENV === "production" ? "Production" : "Development"} Environment Detected`)
-
 /* attempt to load environment variables from dotenv */
 
 try {
@@ -15,16 +11,21 @@ try {
 /* requirements */
 
 const Discord = require("discord.js")
-const { generateDependencyReport } = require("@discordjs/voice")
+const { generateDependencyReport } = require('@discordjs/voice')
 
 const { GuildManager } = require("./structures")
+const { version } = require('./package.json')
 
-/* output voice dependencies */
+/* set debug info */
 
-console.log("@discordjs/voice Dependency Report")
-console.log(generateDependencyReport())
+process.env.PRESENT_MIC_DEBUG_INFO = [
+    `Discord Present Mic v${version} - ${process.env.NODE_ENV === "production" ? "Production" : "Development"}`, 
+    "@discordjs/voice Dependency Report",
+].join("\n--------------------------------------------------\n") + "\n" + generateDependencyReport()
 
-/* instnatiate the client with proper gateway intents */
+console.log(process.env.PRESENT_MIC_DEBUG_INFO)
+
+/* instantiate the client with proper gateway intents */
 
 const client = new Discord.Client({ intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"] })
 

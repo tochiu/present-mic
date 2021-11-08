@@ -1,13 +1,11 @@
-
-const { generateDependencyReport } = require('@discordjs/voice')
-
 const BaseCommand = require('../BaseCommand')
 
 module.exports = class NerdCommand extends BaseCommand {
+
     constructor(client) {
         super(client, {
             name: "nerd",
-            description: "Generate a voice debug report for nerds.",
+            description: "Output version and generate a voice debug report for nerds.",
             throttling: {
                 usages: 1,
                 duration: 1
@@ -16,9 +14,6 @@ module.exports = class NerdCommand extends BaseCommand {
     }
 
     async run(interaction) {
-        interaction.reply({
-            content: generateDependencyReport(),
-            ephemeral: true
-        })
+        interaction.reply({ content: process.env.PRESENT_MIC_DEBUG_INFO, ephemeral: true })
     }
 }
