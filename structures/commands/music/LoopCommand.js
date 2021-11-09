@@ -26,6 +26,12 @@ module.exports = class LoopCommand extends BaseCommand {
             return
         }
 
+        /* abort if not playing anything */
+        if (!manager.music.getState().playing) {
+            interaction.reply({ content: ":face_with_raised_eyebrow: I ain't playin' anything...", ephemeral: true })
+            return
+        }
+
         /* toggle loop */
         const looping = manager.music.toggleLoop()
 

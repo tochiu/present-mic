@@ -36,11 +36,11 @@ class MusicPlayer {
 						the voice connection.
 					*/
 					try {
+						/* Probably moved voice channel */
 						await entersState(this._voiceConnection, VoiceConnectionStatus.Connecting, 5000)
-						// Probably moved voice channel
 					} catch {
+						/* Probably removed from voice channel */
 						this._voiceConnection.destroy()
-						// Probably removed from voice channel
 					}
 				} else if (this._voiceConnection.rejoinAttempts < 5) {
 					/*
@@ -86,10 +86,14 @@ class MusicPlayer {
 			/* Attempt to process queue if player is idle */
 			if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) {
 				console.log("Playback complete!")
-				this.processNext(this._looping && oldState.resource.metadata.track)
+
+				/* this is guaranteed to exist because states outside of idle have a resource */
+				const metadata = oldState.resource.metadata
+
+				this.processNext(this._looping && metadata.loopable && metadata.track)
 			}
 		})
-
+		
 		this._audioPlayer.on("error", e => {
 			console.error("Playback error!")
 			console.error(e)
@@ -122,7 +126,11 @@ class MusicPlayer {
 	}
 
 	skip() {
-		this._audioPlayer.stop(true)
+		const resource = this._audioPlayer.state.resource
+		if (resource) {
+			resource.metadata.loopable = false
+			this._audioPlayer.stop(true)
+		}
 	}
 
 	enqueue(tracks, index) {
@@ -145,7 +153,7 @@ class MusicPlayer {
 
 	clear() {
 		this._queue = []
-		this._audioPlayer.stop(true)
+		this.skip()
 	}
 
 	destroy() {
@@ -164,8 +172,13 @@ class MusicPlayer {
 		/* Use the specified track or take the first item from the queue. */
 		track = track || this._queue.shift()
 		
-		/* If the track doesn't exist return */
+		/* If a track to play doesn't exist return */
 		if (!track) {
+			/* If looping is on then we should disable it */
+			if (this._looping) {
+				this._looping = false
+			}
+
 			return false
 		}
 
@@ -183,6 +196,7 @@ class MusicPlayer {
 				inputType: stream.type,
 				metadata: {
 					track,
+					loopable: true,
 					timestamp: Date.now()
 				}
 			})
