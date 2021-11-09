@@ -1,6 +1,6 @@
 {
   "name": "discord-present-mic",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Play music in your Discord channels!",
   "main": "index.js",
   "scripts": {
