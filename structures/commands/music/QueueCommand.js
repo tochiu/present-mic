@@ -1,12 +1,20 @@
 const unescape = require('unescape')
-const { MessageEmbed } = require('discord.js')
+const { MessageEmbed, MessageActionRow, MessageButton, Constants } = require('discord.js')
 
 const BaseCommand = require('../BaseCommand')
 const { formatSeconds } = require('../util')
 
-const { colorPrimary } = require('../../../config.json')
+const { colorPrimary, interactionLifetimeMinutes } = require('../../../config.json')
 
-const placeholder = "⠀" /* field titles and values cannot be empty or whitespace => use an empty unicode character */
+const PLACEHOLDER = "\u200b" /* field titles and values cannot be empty or whitespace => use an empty unicode character */
+
+const BUTTON_ID = {
+    NEXT_PAGE: "next_page",
+    PREV_PAGE: "prev_page",
+    CURR_PAGE: "curr_page",
+    FRST_PAGE: "frst_page",
+    LAST_PAGE: "last_page",
+}
 
 /* return a description string based on the queue item and index */
 function getQueueItemDescription(item, index) {
@@ -17,13 +25,37 @@ function getQueueItemDescription(item, index) {
         + ` Requested by: ${item.requester.nickname || item.requester.user.tag}${item.requester.nickname ? ` (${item.requester.user.tag})` : ""}\`` /* requester */
 }
 
-/* cuts the given embeds fields into a new embed until either that new embed is reaches embed limits or the given one is under limits */
-/* returns the new embed or the given one if its already under embed limits */
-function spliceEmbedFields(embed) {
-    const splitEmbed = new MessageEmbed()
+/* 
+    splices fields into a new embed until it reaches limitations or the given one is empty
+    * if the given embed is already under limitations 
+        * if the fields are empty then nothing is returned 
+        * if the fields are non-empty then the given embed is returned 
+*/
+function spliceEmbedFields(embed, cutoff) {
+    if (embed.length <= 6000 && embed.fields.length <= cutoff) {
+        if (embed.fields.length === 0) {
+            return
+        }
 
-    while (splitEmbed.fields.length < 25 && (embed.length > 6000 || embed.fields.length > 25) && embed.fields.length > 0) {
-        const field = embed.fields[embed.fields.length - 1]
+        if (embed.footer) {
+            embed.fields[embed.fields.length - 1].value += "\n" + PLACEHOLDER
+        }
+
+        return embed
+    }
+
+    const splitEmbed = new MessageEmbed()
+    splitEmbed.setColor(embed.color)
+    splitEmbed.setTitle(embed.title)
+    if (embed.image) {
+        splitEmbed.setImage(embed.image.url)
+    }
+    if (embed.footer) {
+        splitEmbed.setFooter(embed.footer.text, embed.footer.iconURL)
+    }
+    
+    while (splitEmbed.fields.length < cutoff && embed.fields.length > 0) {
+        const field = embed.fields[0]
         let name = field.name
         let value = field.value
 
@@ -34,53 +66,84 @@ function spliceEmbedFields(embed) {
             if (len > 6000) {
                 if (name.length > 6000) {
                     name = name.substr(0, 6000 - 4) + "..."
-                    value = placeholder
+                    value = PLACEHOLDER
                 } else {
-                    value = value.substr(0, 6000 - 3 - name.length) + "..."
+                    value = value.substr(0, 6000 - 4 - name.length) + "..."
                 }
 
-                embed.spliceFields(embed.fields.lenth - 1, 1, { ...field, name, value })
+                embed.spliceFields(0, 1, { ...field, name, value })
             }
 
             break
         } else {
-            splitEmbed.spliceFields(0, 0, field)
-            embed.spliceFields(embed.fields.length - 1, 1)
+            splitEmbed.addFields(field)
+            embed.spliceFields(0, 1)
         }
     }
 
-    return splitEmbed.fields.length === 0 ? embed : splitEmbed
+    if (splitEmbed.footer) {
+        splitEmbed.fields[splitEmbed.fields.length - 1].value += "\n" + PLACEHOLDER
+    }
+
+    return splitEmbed
 }
 
-/* splices an embed into an array of an array of embeds result[index] = embed array to send as a single message, result[index][index] = single embed */
-function getSplicedQueueEmbeds(embed) {
-    const results = []
+/* splits queue embed into an array of embeds, each one representing a page */
+function paginateQueueEmbed(embed) {
+    const result = []
+    let current = spliceEmbedFields(embed, 12)
 
-    let group = []
-    let groupLength = 0
+    while (current && current !== embed) {
+        result.push(current)
+        current = spliceEmbedFields(embed, 10)
+    }
 
-    results.unshift(group)
+    result.push(embed)
 
-    let current
+    return result
+}
 
-    while (current !== embed) {
-        current = spliceEmbedFields(embed)
-        if (group.length === 10 || groupLength + current.length > 6000) {
-            group = []
-            groupLength = 0
-            results.unshift(group)
+/* gets message from embed page index and list of embeds */
+function getQueuePageMessage(page, embeds) {
+    if (embeds.length < 2) {
+        return {
+            embeds: [embeds[0]],
+            components: []
         }
-
-        current.setColor(embed.color)
-        group.unshift(current)
-        groupLength += current.length
     }
 
-    if (groupLength === 0) {
-        results.shift()
-    }
+    const buttons = [
+        new MessageButton()
+            .setCustomId(BUTTON_ID.FRST_PAGE)
+            .setLabel("First Page")
+            .setStyle(Constants.MessageButtonStyles.PRIMARY)
+            .setDisabled(page < 2),
+        new MessageButton()
+            .setCustomId(BUTTON_ID.PREV_PAGE)
+            .setLabel("Prev Page")
+            .setStyle(Constants.MessageButtonStyles.PRIMARY)
+            .setDisabled(page === 0),
+        new MessageButton()
+            .setCustomId(BUTTON_ID.CURR_PAGE)
+            .setLabel(`Page ${page + 1}`)
+            .setStyle(Constants.MessageButtonStyles.SECONDARY)
+            .setDisabled(true),
+        new MessageButton()
+            .setCustomId(BUTTON_ID.NEXT_PAGE)
+            .setLabel("Next Page")
+            .setStyle(Constants.MessageButtonStyles.PRIMARY)
+            .setDisabled(page === embeds.length - 1),
+        new MessageButton()
+            .setCustomId(BUTTON_ID.LAST_PAGE)
+            .setLabel("Last Page")
+            .setStyle(Constants.MessageButtonStyles.PRIMARY)
+            .setDisabled(page >= embeds.length - 2),
+    ]
 
-    return results
+    return {
+        embeds: [embeds[page]],
+        components: embeds.length > 2 ? [new MessageActionRow().addComponents(...buttons)] : [new MessageActionRow().addComponents(...buttons.slice(1, 4))]
+    }
 }
 
 module.exports = class QueueCommand extends BaseCommand {
@@ -99,11 +162,11 @@ module.exports = class QueueCommand extends BaseCommand {
         /* abort if nothing playing or in queue */
         const { playing, queue, looping } = manager.music.getState()
         if (!playing && queue.length === 0) {
-            interaction.reply({ content: "I ain't performing or planning to yet! :angry: Maybe queue somethin' up first!", ephemeral: true })
+            interaction.reply({ content: "I ain't performing or planning to yet! :anger: Maybe queue somethin' up first!", ephemeral: true })
             return
         }
 
-        /* build queue message */
+        /* build queue embeds */
 
         const embed = new MessageEmbed()
 
@@ -111,34 +174,57 @@ module.exports = class QueueCommand extends BaseCommand {
         embed.setTitle(`Performance Queue for ${manager.guild.name}`)
 
         if (playing) {
-            embed.addField(placeholder, `__Now ${looping ? "Looping :repeat_one:" : "Performing"}:__\n${getQueueItemDescription(playing)}`)
-
-            if (queue.length > 0) {
-                embed.addField(placeholder, `:arrow_down:__${looping ? "Queue" : "Up Next"}:__:arrow_down:\n`)
-            }
+            embed.addField(PLACEHOLDER, `__Now ${looping ? "Looping :repeat_one:" : "Performing"}:__\n${getQueueItemDescription(playing)}`)
         }
 
         if (queue.length > 0) {
+            if (playing) {
+                embed.addField(PLACEHOLDER, `:arrow_down:__${looping ? "Queue" : "Up Next"}:__:arrow_down:`)
+            }
 
             let totalSeconds = 0
 
             queue.forEach((item, index) => {
                 totalSeconds += item.seconds
-                embed.addField(placeholder, getQueueItemDescription(item, index + 1))
+                embed.addField(PLACEHOLDER, getQueueItemDescription(item, index + 1))
             })
 
-            embed.addField(`${placeholder}\n${queue.length} songs in queue | ${formatSeconds(totalSeconds)} total in length`, placeholder)
+            embed.setFooter(`${queue.length} song${queue.length > 1 ? "s" : ""} in queue | ${formatSeconds(totalSeconds)} total in length`)
         }
 
-        /* send queue messages */
+        const pages = paginateQueueEmbed(embed)
 
-        let message
-        for (const embeds of getSplicedQueueEmbeds(embed)) {
-            if (message) {
-                message = await message.reply({ embeds })
-            } else {
-                message = await interaction.reply({ embeds, fetchReply: true })
-            }
-        }
+        /* queue page state */
+
+        let pageIndex = 0
+
+        /* send queue and listen for button interactions */
+
+        interaction.channel
+            .createMessageComponentCollector({ 
+                time: interactionLifetimeMinutes.queue * 60 * 1000, 
+                message: await interaction.reply({...getQueuePageMessage(pageIndex, pages), fetchReply: true }) 
+            })
+            .on("collect", i => {
+                const id = i.customId
+                switch (id) {
+                    case BUTTON_ID.FRST_PAGE:
+                        pageIndex = 0
+                        break
+                    case BUTTON_ID.PREV_PAGE:
+                        pageIndex = Math.max(pageIndex - 1, 0)
+                        break
+                    case BUTTON_ID.NEXT_PAGE:
+                        pageIndex = Math.min(pageIndex + 1, pages.length - 1)
+                        break
+                    case BUTTON_ID.LAST_PAGE:
+                        pageIndex = pages.length - 1
+                        break
+                    default:
+                        return
+                }
+                
+                i.update(getQueuePageMessage(pageIndex, pages))
+            })
     }
 }
