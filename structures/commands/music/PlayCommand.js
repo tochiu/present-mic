@@ -52,8 +52,8 @@ module.exports = class PlayCommand extends BaseCommand {
             result = {
                 success: false,
                 reason: e.code === "VOICE_JOIN_CHANNEL"
-                    ? "I was blocked from joining ya channel! :sob: Make sure I have proper access!"
-                    : "Ask again later my mic is acting up!"
+                    ? "I was blocked from joinin' ya channel! :sob: Make sure I have proper access!"
+                    : "Ask again later my mic is actin' up!"
             }
         }
 
@@ -62,7 +62,7 @@ module.exports = class PlayCommand extends BaseCommand {
                 const item = result.items[0]
                 if (result.isPlayingNow) { /* that one item is current playing => print now playing message */
                     await deferring
-                    interaction.editReply(`**Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**`)
+                    interaction.editReply(`:arrow_forward: **Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**`)
                 } else { /* that one item is not currently playing so it must be in queue => print item queue info */
                     const embed = new MessageEmbed()
                     embed.setColor(colorPrimary)

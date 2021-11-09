@@ -27,10 +27,10 @@ module.exports = class PlayCommand extends BaseCommand {
         }
 
         /* attempt skip */
-        const state = manager.music.getState()
-        if (state.playing) {
+        const { playing, queue } = manager.music.getState()
+        if (playing) {
             manager.music.skip()
-            interaction.reply(`Skipping current performance${state.queue.length > 0 ? ` :microphone: Next up is \`${state.queue[0].snippet.title}\`` : "..."}`)
+            interaction.reply(`:track_next: **Skipping** \`${playing.snippet.title}\`${queue.length > 0 ? ` :microphone: **Next up is** \`${queue[0].snippet.title}\`` : ""}`)
         } else {
             interaction.reply({ content: ":face_with_raised_eyebrow: There's nothin' to skip friend...", ephemeral: true })
         }

@@ -36,6 +36,6 @@ module.exports = class ClearCommand extends BaseCommand {
 
         /* skip */
         manager.music.clear()
-        interaction.reply(`:microphone2: Don't really like cuttin' the cord but you're the boss!`)
+        interaction.reply(`:microphone2: Don't really like cuttin' the cord but ya the boss!`)
     }
 }
