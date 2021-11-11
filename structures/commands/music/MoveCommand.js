@@ -29,18 +29,20 @@ module.exports = class RemoveCommand extends BaseCommand {
         })
     }
 
-    async run(interaction, manager) {
+    async run(action) {
+        const { interaction, manager } = action
+
         /* abort if a range couldn't be parsed */
         const range = parseRanges(interaction.options.getString("position"))[0]
         if (!range) {
-            interaction.reply({ content: `What'cha doin? :anger: Enter a valid range!'`, ephemeral: true })
+            action.updateReply({ content: `What'cha doin? :anger: Enter a valid range!'`, ephemeral: true })
             return
         }
 
         /* abort if nothing was removed */
         const removed = manager.music.remove([range])
         if (removed.length === 0) {
-            interaction.reply({ content: `Go get your eyes checked! :anger: I ain't find nothin!'`, ephemeral: true })
+            action.updateReply({ content: `Go get your eyes checked! :anger: I ain't find nothin!'`, ephemeral: true })
             return
         }
 
@@ -48,6 +50,6 @@ module.exports = class RemoveCommand extends BaseCommand {
         const { index } = manager.music.enqueue(removed, interaction.options.getNumber("new_position") - 1)
 
         /* send success message */
-        interaction.reply(`:white_check_mark: **Moved** ${removed.length === 1 ? `\`${unescape(removed[0].snippet.title)}\`` : `\`${removed.length}\` performances`} to **\`#${index + 1}\`** in the queue!`)
+        action.updateReply(`:white_check_mark: **Moved** ${removed.length === 1 ? `\`${unescape(removed[0].snippet.title)}\`` : `\`${removed.length}\` performances`} to **\`#${index + 1}\`** in the queue!`)
     }
 }

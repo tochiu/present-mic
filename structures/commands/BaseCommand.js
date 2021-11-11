@@ -11,7 +11,7 @@ class BaseCommand {
         console.log("BaseCommand ran!")
     }
 
-    async handle(interaction, manager) {
+    async handle(action) {
         /* check rate limit */
         if (this.config.throttling) {
             const { usages, duration } = this.config.throttling
@@ -22,7 +22,7 @@ class BaseCommand {
             }
 
             if (this.usages >= usages) {
-                interaction.reply({
+                action.updateReply({
                     content: `This command has been used too many times! :raised_hand: Try again in \`${Math.ceil(duration - (Date.now() - this.timestamp) / 1000)}\` seconds.`,
                     ephemeral: true
                 })
@@ -33,7 +33,7 @@ class BaseCommand {
         }
 
         /* run command */
-        await this.run(interaction, manager)
+        await this.run(action)
     }
 }
 

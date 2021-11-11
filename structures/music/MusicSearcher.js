@@ -1,5 +1,6 @@
 const url = require("url")
 const { google } = require("googleapis")
+const { toSeconds, parse } = require("iso8601-duration")
 
 const youtube = google.youtube("v3")
 
@@ -32,49 +33,45 @@ class MusicSearcher {
 	/*
 		search YouTube for results given a query string
 	*/
-	search(query) {
+	search(query, isMultiSearch) {
 		const auth = this._nextKey()
 
-		/* attempt to parse the query as a url */
-		const q = url.parse(query, true)
+		if (!isMultiSearch) {
+			/* attempt to parse the query as a url */
+			const q = url.parse(query, true)
 
-		let request
-
-		/* parse as YouTube url if url.parse detects youtube in the hostname */
-		if (q.host && q.host.includes("youtube")) {
-			if (q.pathname === "/watch" && q.query.v) {
-				/* query specific YouTube video url */
-				request = this._queryVideos([q.query.v], auth)
-			} else if (q.pathname === "/playlist" && q.query.list) {
-				/* query playlist items and convert those to YouTube video urls */
-				request = youtube.playlistItems.list({
-					part: "snippet",
-					playlistId: q.query.list,
-					maxResults: 50,
-					auth
-				}).then(result => this._queryVideos(
-					result.data.items
-						.filter(item => item.snippet.resourceId.videoId)
-						.map(item => item.snippet.resourceId.videoId),
-					auth
-				))
+			/* parse as YouTube url if url.parse detects youtube in the hostname */
+			if (q.host && q.host.includes("youtube")) {
+				if (q.pathname === "/watch" && q.query.v) {
+					/* query specific YouTube video url */
+					return this._queryVideos([q.query.v], auth)
+				} else if (q.pathname === "/playlist" && q.query.list) {
+					/* query playlist items and convert those to YouTube video urls */
+					return youtube.playlistItems.list({
+						part: "snippet",
+						playlistId: q.query.list,
+						maxResults: 50,
+						auth
+					}).then(result => this._queryVideos(
+						result.data.items
+							.filter(item => item.snippet.resourceId.videoId)
+							.map(item => item.snippet.resourceId.videoId),
+						auth
+					))
+				}
 			}
 		}
 
-		if (!request) {
-			/* parse as YouTube search  */
-			request = youtube.search.list({
-				maxResults: 1,
-				part: "id",
-				q: query,
-				type: "video",
-				videoEmbeddable: "true",
-				safeSearch: "strict",
-				auth
-			}).then(result => this._queryVideos(result.data.items.map(item => item.id.videoId), auth))
-		}
-
-		return request.then(items => items.filter(item => item.status.embeddable && item.contentDetails.contentRating.ytRating !== "ytAgeRestricted"))
+		/* parse as YouTube search  */
+		return youtube.search.list({
+			maxResults: isMultiSearch ? 50 : 1,
+			part: "id",
+			q: query,
+			type: "video",
+			videoEmbeddable: "true",
+			safeSearch: "strict",
+			auth
+		}).then(result => this._queryVideos(result.data.items.map(item => item.id.videoId), auth))
 	}
 
 	/* 
@@ -85,7 +82,17 @@ class MusicSearcher {
 			part: "id,snippet,status,contentDetails",
 			id: ids.join(','),
 			auth
-		}).then(result => result.data.items)
+		}).then(result => {
+			const items = result.data.items
+				.filter(item => item.status.embeddable && item.contentDetails.contentRating.ytRating !== "ytAgeRestricted")
+				.slice(0, 25)
+			
+			items.forEach(item => {
+				item.seconds = toSeconds(parse(item.contentDetails.duration))
+			})
+			
+			return items
+		})
 	}
 
 	/* 

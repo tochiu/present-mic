@@ -12,8 +12,8 @@ module.exports = class InviteCommand extends BaseCommand {
         })
     }
 
-    async run(interaction) {
-        interaction.reply({
+    async run(action) {
+        action.updateReply({
             content: `:link: Share the love! :link: \nhttps://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&permissions=${process.env.PERMISSIONS_INT}&scope=bot%20applications.commands`,
             ephemeral: true
         })

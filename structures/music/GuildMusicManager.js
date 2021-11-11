@@ -1,6 +1,5 @@
 const { Permissions } = require('discord.js')
 const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice')
-const { toSeconds, parse } = require("iso8601-duration")
 
 const MusicSearcher = require("./MusicSearcher")
 const MusicPlayer = require("./MusicPlayer")
@@ -28,76 +27,56 @@ class GuildMusicManager {
 		}
 	}
 
-	async play(query, channel, requester) {
-
+	async search(query, isMultiSearch) {
 		console.log(`Searching: ${query}`)
+		return this._searcher.search(query, isMultiSearch)
+	}
 
-		/* attempt to search using query */
-		let items
-		try {
-			items = await this._searcher.search(query)
-		} catch (e) {
-			console.error(e)
-			return {
-				success: false,
-				reason: `I came across an issue searchin' for \`${query}\` :man_shrugging:`
-			}
+	async play(items, channel, requester) {
+
+		/* check if we can play tracks */
+		const result = this.canPlay(channel)
+		if (!result.success) {
+			return result
 		}
 
-		if (items.length > 0) {
-			/* check if we can play tracks */
-			const canPlayResult = this.canPlay(channel)
-			if (!canPlayResult.success) {
-				return canPlayResult
-			}
+		const player = this._getMusicPlayer(channel)
+		const maxItems = maxQueueItems - player.getState().queue.length
 
-			const player = this._getMusicPlayer(channel)
-			const maxItems = maxQueueItems - player.getState().queue.length
+		/* copy items and cut items over the maxQueueItem limit */
+		items = items.slice(0, maxItems)
 
-			/* cut items over the maxQueueItem limit */
-			if (items.length > maxItems) {
-				items.splice(maxItems, items.length - maxItems)
-			}
+		const state = player.getState()
+		const playingBefore = state.playing
+		const queueBefore = state.queue
+		const playingBeforeTimestamp = state.playTimestamp
 
-			const state = player.getState()
-			const playingBefore = state.playing
-			const queueBefore = state.queue
-			const playingBeforeTimestamp = state.playTimestamp
+		/* attach additional data to each item */
+		for (const item of items) {
 
-			/* attach additional data to each item */
-			for (const item of items) {
+			console.log(`Queueing "${item.snippet.title}" - link: https://www.youtube.com/watch?v=${item.id}`)
 
-				console.log(`Found "${item.snippet.title}" - link: https://www.youtube.com/watch?v=${item.id}`)
+			item.requester = requester
+		}
 
-				item.requester = requester
-				item.seconds = toSeconds(parse(item.contentDetails.duration))
-			}
+		/* queue items and get the process result */
+		if (await player.enqueue(items).processing) {
+			return {
+				success: true,
 
-			/* queue items and get the process result */
-			if (await player.enqueue(items).processing) {
-				return {
-					success: true,
+				isPlayingNow: !playingBefore && queueBefore.length === 0,
 
-					isPlayingNow: !playingBefore && queueBefore.length === 0,
+				currentDurationLeft: playingBefore && playingBeforeTimestamp ? Math.max(0, playingBefore.seconds - (Date.now() - playingBeforeTimestamp) / 1000) : 0,
+				queueBeforeDuration: queueBefore.reduce((duration, item) => duration + item.seconds, 0),
 
-					currentDurationLeft: playingBefore && playingBeforeTimestamp ? Math.max(0, playingBefore.seconds - (Date.now() - playingBeforeTimestamp) / 1000) : 0,
-					queueBeforeDuration: queueBefore.reduce((duration, item) => duration + item.seconds, 0),
-
-					itemsStart: queueBefore.length,
-					itemsDuration: items.reduce((duration, item) => duration + item.seconds, 0),
-					items
-				}
-			} else {
-				return {
-					success: false,
-					reason: `I came across an issue queueing up your result${items.length > 1 ? "s" : ""} for playback! :man_shrugging:`
-				}
+				itemsStart: queueBefore.length,
+				itemsDuration: items.reduce((duration, item) => duration + item.seconds, 0),
+				items
 			}
 		} else {
-			console.log(`No results found!`)
 			return {
 				success: false,
-				reason: "I got nothin'! :person_shrugging: Ain't find squat! :pinching_hand: You must be into weird stuff, huh?"
+				reason: `I came across an issue queueing up your result${items.length > 1 ? "s" : ""} for playback! :man_shrugging:`
 			}
 		}
 	}
@@ -106,7 +85,7 @@ class GuildMusicManager {
 		const player = this._getMusicPlayer()
 		if (player) {
 			/* can't play if the queue is full */
-			if (maxQueueItems - player.getState().queue.length <= 0) {
+			if (player.getState().queue.length >= maxQueueItems) {
 				return {
 					success: false,
 					reason: `The queue already contains \`${maxQueueItems}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
@@ -119,6 +98,7 @@ class GuildMusicManager {
 				reason: "What'cha doin' asking for tunes? :face_with_raised_eyebrow: You're not even in a voice channel!"
 			}
 		} else {
+			/* can't play if you cannot join the requested voice channel */
 			const permissions = channel.permissionsFor(this.client.user)
 			if (!permissions || !permissions.has(Permissions.FLAGS.CONNECT) || !permissions.has(Permissions.FLAGS.SPEAK)) {
 				return {
@@ -185,7 +165,6 @@ class GuildMusicManager {
 					adapterCreator: channel.guild.voiceAdapterCreator,
 				})
 				connection.on("error", console.error)
-				//connection.on("stateChange", console.error)
 			} else {
 				return
 			}

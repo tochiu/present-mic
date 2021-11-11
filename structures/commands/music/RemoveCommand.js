@@ -23,19 +23,20 @@ module.exports = class RemoveCommand extends BaseCommand {
         })
     }
 
-    async run(interaction, manager) {
-
-        const removed = manager.music.remove(
-            parseRanges(interaction.options.getString("positions"))
+    async run(action) {
+        const removed = action.manager.music.remove(
+            parseRanges(action.interaction.options.getString("positions"))
                 .sort((a, b) => b[0] - a[0]) /* sort ranges in descending order of the starting index to preserve indexes after each remove operation */
         )
 
         if (removed.length === 0) {
-            interaction.reply({ content: `Go get your eyes checked! :anger: I ain't find nothin!'`, ephemeral: true })
-        } else if (removed.length === 1) {
-            interaction.reply(`:white_check_mark: **Cut** \`${unescape(removed[0].snippet.title)}\` from performances!`)
+            action.updateReply({ content: `Go get your eyes checked! :anger: I ain't find nothin!'`, ephemeral: true })
         } else {
-            interaction.reply(`:white_check_mark: **Cut** \`${removed.length}\` performances!`)
+            action.updateReply({
+                content: removed.length === 1 
+                    ? `:white_check_mark: **Cut** \`${unescape(removed[0].snippet.title)}\` from performances!` 
+                    : `:white_check_mark: **Cut** \`${removed.length}\` performances!`
+            })
         }
     }
 }

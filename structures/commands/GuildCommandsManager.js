@@ -1,6 +1,8 @@
 const { resolve } = require('path')
 const { readdir } = require('fs').promises
 
+const { MessageActionRow, MessageButton, Constants } = require('discord.js')
+
 const BaseCommand = require('./BaseCommand')
 
 /* recursive fs.readdir provided by https://stackoverflow.com/a/45130990 */
@@ -32,6 +34,113 @@ const gettingCommandClasses = (async () => {
 
     return commands
 })()
+
+/**
+ * A GuildCommandInteraction is a bundle that includes extra information about the CommandInteraction
+ * relevant for the functioning of each command
+ */
+class GuildCommandInteraction {
+    constructor(interaction, manager) {
+        this.interaction = interaction
+        this.manager = manager
+        this._deferring = undefined
+        this._updateInteraction = undefined
+        this._updateInteractionEditor = undefined
+        this._optionsLast = undefined
+    }
+
+    setUpdateInteraction(updateInteraction, updateInteractionEditor) {
+        this._updateInteraction = updateInteraction
+        this._updateInteractionEditor = updateInteractionEditor
+    }
+
+    async setExpiredInteraction() {
+        this.setUpdateInteraction()
+
+        if (!this._optionsLast || this._optionsLast.components.length === 0) {
+            return
+        }
+
+        const options = Object.assign({}, this._optionsLast)
+        options.components = [
+            new MessageActionRow()
+                .addComponents(
+                    new MessageButton()
+                        .setCustomId("interaction_expired")
+                        .setLabel("Interaction Expired")
+                        .setStyle(Constants.MessageButtonStyles.SECONDARY)
+                        .setDisabled(true)
+                )
+        ]
+
+        return this.updateReply(options)
+    }
+    
+    async deferReply(options) {
+        if (this._deferring) {
+            throw "Reply already deferred"
+        }
+        const deferring = this.interaction.deferReply(options)
+        this._deferring = deferring
+        return deferring
+    }
+
+    async updateReply(options) {
+        if (typeof options === "string") {
+            options = { content: options }
+        }
+
+        if (options.content === undefined) {
+            options.content = " "
+        }
+
+        if (options.embeds === undefined) {
+            options.embeds = []
+        }
+
+        if (options.files === undefined) {
+            options.files = []
+        }
+
+        if (options.components === undefined) {
+            options.components = []
+        }
+
+        if (options.stickers === undefined) {
+            options.stickers = []
+        }
+
+        if (options.attachments === undefined) {
+            options.attachments = []
+        }
+        
+        const { interaction, _deferring } = this
+
+        if (this._updateInteraction && this._updateInteractionEditor) {
+            options = this._updateInteractionEditor(options)
+        }
+
+        this._optionsLast = options 
+        
+        if (_deferring) {
+            await _deferring
+
+            if (this._optionsLast !== options) {
+                return
+            }
+        }
+
+        if (this._updateInteraction) {
+            return this._updateInteraction.update(options)
+        } else if (interaction.replied) {
+            return interaction.followUp({ ...options, ephemeral: interaction.ephemeral })
+        } else if (interaction.deferred) {
+            return interaction.editReply(options)
+        } else {
+            return interaction.reply(options)
+        }
+    }
+}
 
 /**
  * A GuildCommandsManager exists for each GuildManager. Registering slash commands and handling command interactions
@@ -87,21 +196,17 @@ class GuildCommandsManager {
             return
         }
 
+        const action = new GuildCommandInteraction(interaction, manager)
+
         /* execute command */
         try {
-            await command.handle(interaction, manager)
+            await command.handle(action)
         } catch (e) {
             /* command error */
             console.error("Command execution error")
             console.error(e)
 
-            if (interaction.replied) {
-                interaction.followUp({ content: this._commandErrorMessage + this._ownerContact, ephemeral: interaction.ephemeral })
-            } else if (interaction.deferred) {
-                interaction.editReply(this._commandErrorMessage + this._ownerContact)
-            } else {
-                interaction.reply({ content: this._commandErrorMessage + this._ownerContact, ephemeral: true })
-            }
+            action.updateReply({ content: this._commandErrorMessage + this._ownerContact, ephemeral: true })
         }
     }
 

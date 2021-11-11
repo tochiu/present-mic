@@ -12,23 +12,24 @@ module.exports = class LoopCommand extends BaseCommand {
         })
     }
 
-    async run(interaction, manager) {
+    async run(action) {
+        const { interaction, manager } = action
         /* abort if not in channel */
         let connectedChannelId = manager.guild.me && manager.guild.me.voice.channelId
         if (!connectedChannelId) {
-            interaction.reply({ content: ":face_with_raised_eyebrow: I ain't in a voice channel...", ephemeral: true })
+            action.updateReply({ content: ":face_with_raised_eyebrow: I ain't in a voice channel...", ephemeral: true })
             return
         }
 
         /* abort if interactor is not in the same channel */
         if (connectedChannelId !== interaction.member.voice.channelId) {
-            interaction.reply({ content: "You ain't even listenin' to me! :anger: Why would I listen to ya?!", ephemeral: true })
+            action.updateReply({ content: "You ain't even listenin' to me! :anger: Why would I listen to ya?!", ephemeral: true })
             return
         }
 
         /* abort if not playing anything */
         if (!manager.music.getState().playing) {
-            interaction.reply({ content: ":face_with_raised_eyebrow: I ain't playin' anything...", ephemeral: true })
+            action.updateReply({ content: ":face_with_raised_eyebrow: I ain't playin' anything...", ephemeral: true })
             return
         }
 
@@ -36,6 +37,6 @@ module.exports = class LoopCommand extends BaseCommand {
         const looping = manager.music.toggleLoop()
 
         /* feedback */
-        interaction.reply(`${looping ? ":white_check_mark:" : ":x:"} Looping has been **${looping ? "Enabled" : "Disabled" }**!`)
+        action.updateReply(`${looping ? ":white_check_mark:" : ":x:"} :repeat_one:`)
     }
 }

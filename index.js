@@ -8,6 +8,10 @@ try {
     }
 }
 
+/* catch exceptions to keep process alive */
+
+process.on('uncaughtException', console.error)
+
 /* requirements */
 
 const Discord = require("discord.js")

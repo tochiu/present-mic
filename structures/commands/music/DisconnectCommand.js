@@ -14,13 +14,13 @@ module.exports = class DisconnectCommand extends BaseCommand {
         })
     }
 
-    async run(interaction, manager) {
-        const connection = getVoiceConnection(manager.guild.id)
+    async run(action) {
+        const connection = getVoiceConnection(action.manager.guild.id)
         if (connection) {
             connection.destroy()
-            interaction.reply(":wave: Goodbye...")
+            action.updateReply(":wave: Goodbye...")
         } else {
-            interaction.reply({ content: ":face_with_raised_eyebrow: I ain't in a voice channel...", ephemeral: true })
+            action.updateReply({ content: ":face_with_raised_eyebrow: I ain't in a voice channel...", ephemeral: true })
         }
     }
 }

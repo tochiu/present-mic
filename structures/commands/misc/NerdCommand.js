@@ -13,7 +13,7 @@ module.exports = class NerdCommand extends BaseCommand {
         })
     }
 
-    async run(interaction) {
-        interaction.reply({ content: process.env.PRESENT_MIC_DEBUG_INFO, ephemeral: true })
+    async run(action) {
+        action.updateReply({ content: process.env.PRESENT_MIC_DEBUG_INFO, ephemeral: true })
     }
 }

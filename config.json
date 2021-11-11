@@ -1,7 +1,5 @@
 {
     "colorPrimary": "#C5904D",
     "maxQueueItems": 100,
-    "interactionLifetimeMinutes": {
-        "queue": 5
-    }
+    "interactionLifetime": 5
 }
