@@ -1,4 +1,7 @@
+const { MessageActionRow, MessageButton, Constants } = require('discord.js')
+
 const BaseCommand = require('../BaseCommand')
+const { EMPTY_UNICODE } = require('../CommandUtil')
 
 module.exports = class InviteCommand extends BaseCommand {
     constructor(client) {
@@ -14,7 +17,16 @@ module.exports = class InviteCommand extends BaseCommand {
 
     async run(action) {
         action.updateReply({
-            content: `:link: Share the love! :link: \nhttps://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&permissions=${process.env.PERMISSIONS_INT}&scope=bot%20applications.commands`,
+            content: EMPTY_UNICODE,
+            components: [
+                new MessageActionRow()
+                    .addComponents(
+                        new MessageButton()
+                            .setLabel("Invite Me!")
+                            .setStyle(Constants.MessageButtonStyles.LINK)
+                            .setURL(`https://discord.com/api/oauth2/authorize?client_id=${process.env.CLIENT_ID}&permissions=${process.env.PERMISSIONS_INT}&scope=bot%20applications.commands`)
+                    )
+            ],
             ephemeral: true
         })
     }

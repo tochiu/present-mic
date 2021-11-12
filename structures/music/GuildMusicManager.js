@@ -4,7 +4,7 @@ const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice')
 const MusicSearcher = require("./MusicSearcher")
 const MusicPlayer = require("./MusicPlayer")
 
-const { maxQueueItems } = require("../../config.json")
+const { MAX_QUEUE_ITEMS } = require("../../config.json")
 
 /**
  * A GuildMusicManager exists for each GuildManager. Playback, joining, disconnecting and queue state management for
@@ -41,7 +41,7 @@ class GuildMusicManager {
 		}
 
 		const player = this._getMusicPlayer(channel)
-		const maxItems = maxQueueItems - player.getState().queue.length
+		const maxItems = MAX_QUEUE_ITEMS - player.getState().queue.length
 
 		/* copy items and cut items over the maxQueueItem limit */
 		items = items.slice(0, maxItems)
@@ -85,10 +85,10 @@ class GuildMusicManager {
 		const player = this._getMusicPlayer()
 		if (player) {
 			/* can't play if the queue is full */
-			if (player.getState().queue.length >= maxQueueItems) {
+			if (player.getState().queue.length >= MAX_QUEUE_ITEMS) {
 				return {
 					success: false,
-					reason: `The queue already contains \`${maxQueueItems}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
+					reason: `The queue already contains \`${MAX_QUEUE_ITEMS}\` performances! :fearful:  Use \`/remove\` or \`/clear\` if you really want to make space`
 				}
 			}
 		} else if (!channel) {

@@ -4,6 +4,8 @@ const { toSeconds, parse } = require("iso8601-duration")
 
 const youtube = google.youtube("v3")
 
+const { MAX_SEARCH_RESULTS } = require("../../config.json")
+
 const GAPI_KEYS = []
 
 /* populate api key rotation array */
@@ -85,7 +87,7 @@ class MusicSearcher {
 		}).then(result => {
 			const items = result.data.items
 				.filter(item => item.status.embeddable && item.contentDetails.contentRating.ytRating !== "ytAgeRestricted")
-				.slice(0, 25)
+				.slice(0, MAX_SEARCH_RESULTS)
 			
 			items.forEach(item => {
 				item.seconds = toSeconds(parse(item.contentDetails.duration))

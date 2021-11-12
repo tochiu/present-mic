@@ -2,9 +2,9 @@ const unescape = require('unescape')
 const { MessageEmbed } = require('discord.js')
 
 const BaseCommand = require('../BaseCommand')
-const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, EMPTY_UNICODE } = require('../util')
+const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, EMPTY_UNICODE } = require('../CommandUtil')
 
-const { colorPrimary, interactionLifetime } = require('../../../config.json')
+const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_QUEUE_PAGE_SIZE } = require('../../../config.json')
 
 /* return a description string based on the queue item and index */
 function getQueueItemDescription(item, index) {
@@ -81,11 +81,11 @@ function spliceEmbedFields(embed, cutoff) {
 /* splits queue embed into an array of embeds, each one representing a page */
 function paginateQueueEmbed(embed) {
     const result = []
-    let current = spliceEmbedFields(embed, 12)
+    let current = spliceEmbedFields(embed, 2 + MAX_QUEUE_PAGE_SIZE)
 
     while (current && current !== embed) {
         result.push(current)
-        current = spliceEmbedFields(embed, 10)
+        current = spliceEmbedFields(embed, MAX_QUEUE_PAGE_SIZE)
     }
 
     result.push(embed)
@@ -117,7 +117,7 @@ module.exports = class QueueCommand extends BaseCommand {
 
         const embed = new MessageEmbed()
 
-        embed.setColor(colorPrimary)
+        embed.setColor(PRIMARY_COLOR)
         embed.setTitle(`Performance Queue for ${action.manager.guild.name}`)
 
         if (playing) {
@@ -148,7 +148,7 @@ module.exports = class QueueCommand extends BaseCommand {
         /* send queue and listen for button interactions */
 
         const collector = action.interaction.channel.createMessageComponentCollector({ 
-            time: interactionLifetime * 60 * 1000, 
+            time: INTERACT_LIFETIME * 60 * 1000, 
             message: await action.updateReply({...getEmbedPageMessage(pageIndex, pages), fetchReply: true }) 
         })
         

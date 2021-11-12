@@ -1,5 +1,5 @@
 const BaseCommand = require('../BaseCommand')
-const { processPlay, processSearch } = require('../util')
+const { processPlay, processSearch } = require('../CommandUtil')
 
 module.exports = class PlayCommand extends BaseCommand {
     constructor(client) {

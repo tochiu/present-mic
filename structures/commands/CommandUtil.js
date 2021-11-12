@@ -1,7 +1,7 @@
 const unescape = require('unescape')
 const { MessageActionRow, MessageButton, MessageEmbed, Constants } = require('discord.js')
 
-const { colorPrimary } = require('../../../config.json')
+const { PRIMARY_COLOR } = require('../../config.json')
 
 const PAGE_BUTTON_ID = {
     NEXT_PAGE: "next_page",
@@ -13,7 +13,7 @@ const PAGE_BUTTON_ID = {
 
 const EMPTY_UNICODE = "\u200b"  /* some field values cannot be empty or whitespace => use an empty unicode character */
 
-/* convert to seconds to mm:ss */
+/* convert from seconds to mm:ss */
 function formatSeconds(seconds) {
     return `${Math.floor(seconds / 60)}:${Math.round(seconds % 60).toString().padStart(2, "0")}`
 }
@@ -149,7 +149,7 @@ async function processPlay(action, items) {
                 action.updateReply({ content: `:arrow_forward: **Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**` })
             } else { /* that one item is not currently playing so it must be in queue => print item queue info */
                 const embed = new MessageEmbed()
-                embed.setColor(colorPrimary)
+                embed.setColor(PRIMARY_COLOR)
                 embed.setAuthor("Performance Queued")
                 embed.setThumbnail(item.snippet.thumbnails.default.url)
                 embed.setDescription(`[**${unescape(item.snippet.title)}**](https://www.youtube.com/watch?v=${item.id})`)
@@ -162,7 +162,7 @@ async function processPlay(action, items) {
             }
         } else { /* multiple items were queued => print multi-item queue info */
             const embed = new MessageEmbed()
-            embed.setColor(colorPrimary)
+            embed.setColor(PRIMARY_COLOR)
             embed.setAuthor("Performance Set Queued")
             embed.addField("Performances", `\`${result.items.length}\``, true)
             embed.addField("Duration", formatSeconds(result.itemsDuration).toString(), true)

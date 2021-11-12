@@ -1,7 +1,7 @@
 const unescape = require('unescape')
 
 const BaseCommand = require('../BaseCommand')
-const { parseRanges } = require('../util')
+const { parseRanges } = require('../CommandUtil')
 
 module.exports = class RemoveCommand extends BaseCommand {
     constructor(client) {

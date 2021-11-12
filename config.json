@@ -1,5 +1,8 @@
 {
-    "colorPrimary": "#C5904D",
-    "maxQueueItems": 100,
-    "interactionLifetime": 5
+    "PRIMARY_COLOR": "#C5904D",
+    "INTERACT_LIFETIME": 5,
+    "MAX_QUEUE_ITEMS": 100,
+    "MAX_QUEUE_PAGE_SIZE": 10,
+    "MAX_SEARCH_PAGE_SIZE": 5,
+    "MAX_SEARCH_RESULTS": 25
 }

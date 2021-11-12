@@ -132,10 +132,8 @@ class GuildCommandInteraction {
 
         if (this._updateInteraction) {
             return this._updateInteraction.update(options)
-        } else if (interaction.replied) {
-            return interaction.followUp({ ...options, ephemeral: interaction.ephemeral })
-        } else if (interaction.deferred) {
-            return interaction.editReply(options)
+        } else if (interaction.replied || interaction.deferred) {
+            return interaction.editReply({ ...options, ephemeral: interaction.ephemeral })
         } else {
             return interaction.reply(options)
         }
@@ -211,7 +209,7 @@ class GuildCommandsManager {
     }
 
     async _register() {
-        console.log(`Registering "${this.guild.name}" commands.`)
+        console.log(`Registering "${this.guild.name}" commands`)
 
         const commands = this.map
         const body = []

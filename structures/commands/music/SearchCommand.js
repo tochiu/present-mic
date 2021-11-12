@@ -2,35 +2,34 @@ const unescape = require('unescape')
 const { MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Constants } = require('discord.js')
 
 const BaseCommand = require('../BaseCommand')
-const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, processPlay, processSearch, EMPTY_UNICODE } = require('../util')
+const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, processPlay, processSearch } = require('../CommandUtil')
 
-const { colorPrimary, interactionLifetime } = require('../../../config.json')
+const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_SEARCH_PAGE_SIZE } = require('../../../config.json')
 
-const RESULTS_PER_PAGE = 5
 const RESULT_SELECT_MENU_ID = "result_select_menu"
 const SELECT_SEARCH_BUTTON_ID = "search_again_button"
 
 function paginateSearchResults(results) {
     const pages = []
     const pageResults = []
-    for (let i = 0; i < results.length; i += RESULTS_PER_PAGE) {
+    for (let i = 0; i < results.length; i += MAX_SEARCH_PAGE_SIZE) {
         const pageEmbeds = []
         const pageResultSlice = []
         
         pageEmbeds.push(
             new MessageEmbed()
-                .setColor(colorPrimary)
+                .setColor(PRIMARY_COLOR)
                 .setTitle(":mag_right: Search Results")
         )
 
-        results.slice(i, Math.min(results.length, i + RESULTS_PER_PAGE)).forEach((item, sliceIndex) => {
+        results.slice(i, Math.min(results.length, i + MAX_SEARCH_PAGE_SIZE)).forEach((item, sliceIndex) => {
             const id = item.id
             const title = unescape(item.snippet.title)
 
             pageResultSlice.push({ id, title })
             pageEmbeds.push(
                 new MessageEmbed()
-                    .setColor(colorPrimary)
+                    .setColor(PRIMARY_COLOR)
                     .setThumbnail(item.snippet.thumbnails.default.url)
                     .setDescription(`**\`${i + sliceIndex + 1}.\`** [**${title}**](https://www.youtube.com/watch?v=${id})`)
                     .addField("Channel", unescape(item.snippet.channelTitle), true)
@@ -56,7 +55,7 @@ function getSearchPageMessage(page, embeds, pageResults) {
                     .setPlaceholder("Please Select a Search Result")
                     .addOptions(
                         pageResults[page].map((result, i) => {
-                            const resultIndex = RESULTS_PER_PAGE*page + i
+                            const resultIndex = MAX_SEARCH_PAGE_SIZE*page + i
                             return {
                                 label: `#${resultIndex + 1}`,
                                 description: result.title,
@@ -110,37 +109,43 @@ module.exports = class SearchCommand extends BaseCommand {
             return
         }
 
+        /* get array of pages + array of results for each page to begin preparing the search page */
+
         const { pages, pageResults } = paginateSearchResults(items)
 
-        /* search message state */
+        /* search page state */
 
         let pageIndex = 0
         let isSearchComplete = false
 
-        /* send queue and listen for button interactions */
+        /* send search page and listen for additional interactions */
 
         const collector = action.interaction.channel.createMessageComponentCollector({ 
-            time: interactionLifetime * 60 * 1000, 
-            filter: i => i.user.id === action.interaction.member.user.id,
+            time: INTERACT_LIFETIME * 60 * 1000, 
+            filter: i => i.user.id === action.interaction.member.user.id, /* we only care about interactions from the member who asked */
             message: await action.updateReply({...getSearchPageMessage(pageIndex, pages, pageResults), fetchReply: true }) 
         })
 
         collector.on("end", () => action.setExpiredInteraction())
         collector.on("collect", async i => {
             if (isSearchComplete) {
+                /* exit the completion state and redisplay search options if the user wants to select again */
                 if (i.customId === SELECT_SEARCH_BUTTON_ID) {
                     isSearchComplete = false
                     action.setUpdateInteraction(i)
                     action.updateReply(getSearchPageMessage(pageIndex, pages, pageResults))
                 }
             } else if (i.customId === RESULT_SELECT_MENU_ID) {
+                /* validate the selected search result */
                 const index = parseInt(i.values[0])
                 if (!isNaN(index) && index >= 0 && index < items.length) {
+                    /* enter the completion state and process playing the search result */
                     isSearchComplete = true
                     action.setUpdateInteraction(i, appendSelectSearch)
                     await processPlay(action, [items[index]])
                 }
             } else {
+                /* otherwise simply update the search page */
                 pageIndex = getPageIndexFromButtonId(i.customId, pageIndex, pages.length)
                 action.setUpdateInteraction(i)
                 action.updateReply(getSearchPageMessage(pageIndex, pages, pageResults))
