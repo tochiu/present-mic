@@ -31,7 +31,7 @@ module.exports = class PlayCommand extends BaseCommand {
         const { playing, queue } = manager.music.getState()
         if (playing) {
             manager.music.skip()
-            action.updateReply(`:track_next: **Skipping** \`${playing.snippet.title}\`${queue.length > 0 ? ` :arrow_forward: **Next up is** \`${queue[0].snippet.title}\`` : ""}`)
+            action.updateReply(`:track_next: **Skipping** \`${playing.snippet.title}\`${queue.length > 0 ? `\n:arrow_forward: **Next up is** \`${queue[0].snippet.title}\`` : ""}`)
         } else {
             action.updateReply({ content: ":face_with_raised_eyebrow: There's nothin' to skip friend...", ephemeral: true })
         }
