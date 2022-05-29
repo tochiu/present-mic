@@ -20,7 +20,7 @@
     "discord.js": "^13.2.0",
     "googleapis": "^89.0.0",
     "iso8601-duration": "^1.3.0",
-    "play-dl": "^1.1.8",
+    "play-dl": "github:k2helix/play-dl-compiled",
     "sodium": "^3.0.2",
     "unescape": "^1.0.1"
   },
