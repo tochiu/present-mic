@@ -155,6 +155,26 @@ class GuildMusicManager {
 		}
 	}
 
+	async handleVoiceStateUpdate(oldState, _) {
+		const connection = getVoiceConnection(this.guild.id)
+		if (!connection) {
+			return
+		}
+
+		const { channel } = oldState
+
+		if (
+			channel &&
+			channel.id &&
+			channel.id === connection.joinConfig.channelId &&
+			channel.members.size === 1 &&
+			channel.members.has(this.guild.client?.user.id)
+		) {
+			console.log("connection destroyed")
+			connection.destroy()
+		}
+	}
+
 	_getMusicPlayer(channel) {
 		let connection = getVoiceConnection(this.guild.id)
 		if (!connection) {

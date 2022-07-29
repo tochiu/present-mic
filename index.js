@@ -51,6 +51,12 @@ client.once("ready", () => {
 client.on("error", console.error)
 client.on("guildCreate", guild => GuildManager.register(guild, client))
 client.on("guildDelete", guild => GuildManager.unregister(guild))
+client.on("voiceStateUpdate", (oldState, newState) => {
+    const manager = GuildManager.managers.get(oldState.guild.id)
+    if (manager && manager.guild.available) {
+        manager.music.handleVoiceStateUpdate(oldState, newState)
+    }
+})
 client.on("interactionCreate", async interaction => {
     /* 
         we only care about commands in guilds 
