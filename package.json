@@ -1,5 +1,5 @@
 {
-  "name": "discord-present-mic",
+  "name": "present-mic",
   "version": "1.4.0",
   "description": "Play music in your Discord channels!",
   "main": "index.js",
