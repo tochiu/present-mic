@@ -32,13 +32,14 @@ class MusicPlayer {
 						If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
 						but there is a chance the connection will recover itself if the reason of the disconnect was due to
 						switching voice channels. This is also the same code for the bot being kicked from the voice channel,
-						so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
+						so we allow 20 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
 						the voice connection.
 					*/
 					try {
 						/* Probably moved voice channel */
-						await entersState(this._voiceConnection, VoiceConnectionStatus.Connecting, 5000)
+						await entersState(this._voiceConnection, VoiceConnectionStatus.Connecting, 20000)
 					} catch {
+						console.log("Destroying voice connection due to timeout in awaiting reconnection from websocket close with code 4014 (should not manually reconnect)")
 						/* Probably removed from voice channel */
 						this._voiceConnection.destroy()
 					}
@@ -52,6 +53,8 @@ class MusicPlayer {
 					/*
 						The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
 					*/
+					console.log("Destroying voice connection due to exceeding rejoin attempts")
+					console.log(`Disconnect reason: ${newState.reason}, Close code: ${newState.closeCode}`)
 					this._voiceConnection.destroy()
 				}
 			} else if (newState.status === VoiceConnectionStatus.Destroyed) {
@@ -73,6 +76,7 @@ class MusicPlayer {
 					await entersState(this._voiceConnection, VoiceConnectionStatus.Ready, 20000)
 				} catch {
 					if (this._voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) {
+						console.log("Destroying voice connection due to timeout in awaiting ready state")
 						this._voiceConnection.destroy()
 					}
 				} finally {
