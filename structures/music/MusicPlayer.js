@@ -74,7 +74,9 @@ class MusicPlayer {
 				this._readyLock = true
 				try {
 					await entersState(this._voiceConnection, VoiceConnectionStatus.Ready, 20000)
-				} catch {
+				} catch (e) {
+					console.error("Failure to enter ready state")
+					console.error(e)
 					if (this._voiceConnection.state.status !== VoiceConnectionStatus.Destroyed) {
 						console.log("Destroying voice connection due to timeout in awaiting ready state")
 						this._voiceConnection.destroy()
