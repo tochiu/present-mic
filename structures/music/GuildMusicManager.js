@@ -185,6 +185,17 @@ class GuildMusicManager {
 					adapterCreator: channel.guild.voiceAdapterCreator,
 				})
 				connection.on("error", console.error)
+
+				// WORKAROUND FOR ISSUE: https://github.com/discordjs/discord.js/issues/9185#issuecomment-1452514375
+
+				const networkStateChangeHandler = (_, newNetworkState) => {
+					const newUdp = Reflect.get(newNetworkState, 'udp');
+					clearInterval(newUdp?.keepAliveInterval);
+				};
+				connection.on('stateChange', (oldState, newState) => {
+					Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler);
+					Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler);
+				});
 			} else {
 				return
 			}
