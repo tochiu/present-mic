@@ -4,6 +4,7 @@
   "description": "Play music in your Discord channels!",
   "main": "index.js",
   "scripts": {
+    "build": "tsup node_modules/play-dl/play-dl --minify --legacy-output --format cjs --out-dir node_modules/play-dl/dist",
     "test": "node test/index.js",
     "start": "node index.js "
   },
@@ -12,7 +13,7 @@
     "music",
     "youtube"
   ],
-  "author": "Rusuban#4444",
+  "author": "rusuban",
   "license": "ISC",
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
@@ -20,12 +21,19 @@
     "discord.js": "^13.2.0",
     "googleapis": "^89.0.0",
     "iso8601-duration": "^1.3.0",
-    "play-dl": "github:k2helix/play-dl-compiled",
+    "play-dl": "github:YuzuZensai/play-dl-test#test",
     "sodium": "^3.0.2",
     "unescape": "^1.0.1"
   },
   "devDependencies": {
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "@types/node": "^18.7.23",
+    "prettier": "^2.3.1",
+    "tsup": "^6.0.1",
+    "typedoc": "^0.22.11",
+    "typedoc-plugin-extras": "^2.2.1",
+    "typedoc-plugin-missing-exports": "^1.0.0",
+    "typescript": "^4.7.2"
   },
   "engines": {
     "node": "16.x",

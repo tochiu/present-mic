@@ -17,7 +17,7 @@ process.on('uncaughtException', console.error)
 const Discord = require("discord.js")
 const { generateDependencyReport } = require('@discordjs/voice')
 
-const { GuildManager } = require("./structures")
+const { GuildManager } = require("./src")
 const { version } = require('./package.json')
 
 /* set debug info */
