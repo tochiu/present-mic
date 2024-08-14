@@ -1,0 +1,10 @@
+version: '2'
+services:
+  present-mic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: .env
+        target: /home/node/app/.env

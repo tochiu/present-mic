@@ -1,0 +1,13 @@
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+.git
+.gitignore
+
+node_modules
+tmp
+.env
+.test
+
+.vscode
