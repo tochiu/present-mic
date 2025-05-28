@@ -1,7 +1,6 @@
-const BaseCommand = require('../BaseCommand')
+import { BaseCommand } from "../BaseCommand.js"
 
-module.exports = class NerdCommand extends BaseCommand {
-
+export class NerdCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "nerd",

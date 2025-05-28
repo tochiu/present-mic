@@ -1,10 +1,10 @@
-const unescape = require('unescape')
-const { MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Constants } = require('discord.js')
+import unescape from 'unescape'
+import { MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Constants } from 'discord.js'
+import { BaseCommand } from '../BaseCommand.js'
+import { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, processPlay, processSearch } from '../CommandUtil.js'
+import config from "../../../config.json" with { type: "json" }
 
-const BaseCommand = require('../BaseCommand')
-const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, processPlay, processSearch } = require('../CommandUtil')
-
-const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_SEARCH_PAGE_SIZE } = require('../../../config.json')
+const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_SEARCH_PAGE_SIZE } = config
 
 const RESULT_SELECT_MENU_ID = "result_select_menu"
 const SELECT_SEARCH_BUTTON_ID = "search_again_button"
@@ -83,7 +83,7 @@ function appendSelectSearch(message) {
     return message
 }
 
-module.exports = class SearchCommand extends BaseCommand {
+export class SearchCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "search",

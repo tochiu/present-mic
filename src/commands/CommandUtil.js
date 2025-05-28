@@ -1,9 +1,10 @@
-const unescape = require('unescape')
-const { MessageActionRow, MessageButton, MessageEmbed, Constants } = require('discord.js')
+import unescape from "unescape"
+import { MessageActionRow, MessageButton, MessageEmbed, Constants } from "discord.js"
+import config from "../../config.json" with { type: "json" }
 
-const { PRIMARY_COLOR } = require('../../config.json')
+export const { PRIMARY_COLOR } = config
 
-const PAGE_BUTTON_ID = {
+export const PAGE_BUTTON_ID = {
     NEXT_PAGE: "next_page",
     PREV_PAGE: "prev_page",
     CURR_PAGE: "curr_page",
@@ -11,15 +12,13 @@ const PAGE_BUTTON_ID = {
     LAST_PAGE: "last_page",
 }
 
-const EMPTY_UNICODE = "\u200b"  /* some field values cannot be empty or whitespace => use an empty unicode character */
+export const EMPTY_UNICODE = "\u200b"  /* some field values cannot be empty or whitespace => use an empty unicode character */
 
-/* convert from seconds to mm:ss */
-function formatSeconds(seconds) {
+export function formatSeconds(seconds) {
     return `${Math.floor(seconds / 60)}:${Math.round(seconds % 60).toString().padStart(2, "0")}`
 }
 
-/* parse 1-indexed comma delimited range strings */
-function parseRanges(str) {
+export function parseRanges(str) {
     return str
         .split(",")
         .map(rangeStr => rangeStr
@@ -38,8 +37,7 @@ function parseRanges(str) {
         .filter(splice => splice)
 }
 
-/* gets message from embed page index and list of embeds */
-function getEmbedPageMessage(page, embeds) {
+export function getEmbedPageMessage(page, embeds) {
     if (embeds.length < 2) {
         return {
             embeds: [embeds[0]],
@@ -77,11 +75,13 @@ function getEmbedPageMessage(page, embeds) {
 
     return {
         embeds: [embeds[page]],
-        components: embeds.length > 2 ? [new MessageActionRow().addComponents(...buttons)] : [new MessageActionRow().addComponents(...buttons.slice(1, 4))]
+        components: embeds.length > 2
+            ? [new MessageActionRow().addComponents(...buttons)]
+            : [new MessageActionRow().addComponents(...buttons.slice(1, 4))]
     }
 }
 
-function getPageIndexFromButtonId(id, pageIndex, pageCount) {
+export function getPageIndexFromButtonId(id, pageIndex, pageCount) {
     switch (id) {
         case PAGE_BUTTON_ID.FRST_PAGE:
             pageIndex = 0
@@ -100,25 +100,21 @@ function getPageIndexFromButtonId(id, pageIndex, pageCount) {
     return pageIndex
 }
 
-async function processSearch(action, query, isMultiSearch = false) {
-    /* abort if query is nothing */
+export async function processSearch(action, query, isMultiSearch = false) {
     query = query.trim()
     if (!query) {
         action.updateReply({ content: ":pinched_fingers: Gimme somethin' that makes sense kiddo!", ephemeral: true })
         return
     }
     
-    /* abort if cant play */
     const { success, reason } = action.manager.music.canPlay(action.interaction.member.voice.channel)
     if (!success) {
         action.updateReply({ content: reason, ephemeral: true })
         return
     }
 
-    /* defer */
     action.deferReply()
 
-    /* search */
     try {
         const items = await action.manager.music.search(query, isMultiSearch)
         if (items.length === 0) {
@@ -135,7 +131,7 @@ async function processSearch(action, query, isMultiSearch = false) {
     }
 }
 
-async function processPlay(action, items) {
+export async function processPlay(action, items) {
     const result = await action.manager.music.play(
         items, 
         action.interaction.member.voice.channel, 
@@ -143,11 +139,11 @@ async function processPlay(action, items) {
     )
 
     if (result.success) {
-        if (result.items.length === 1) { /* exactly one item was queued */
+        if (result.items.length === 1) {
             const item = result.items[0]
-            if (result.isPlayingNow) { /* that one item is current playing => print now playing message */
+            if (result.isPlayingNow) {
                 action.updateReply({ content: `:arrow_forward: **Performing** :microphone: \`${unescape(item.snippet.title)}\` **now!**` })
-            } else { /* that one item is not currently playing so it must be in queue => print item queue info */
+            } else {
                 const embed = new MessageEmbed()
                 embed.setColor(PRIMARY_COLOR)
                 embed.setAuthor("Performance Queued")
@@ -160,7 +156,7 @@ async function processPlay(action, items) {
                 
                 action.updateReply({ embeds: [embed] })
             }
-        } else { /* multiple items were queued => print multi-item queue info */
+        } else {
             const embed = new MessageEmbed()
             embed.setColor(PRIMARY_COLOR)
             embed.setAuthor("Performance Set Queued")
@@ -171,16 +167,7 @@ async function processPlay(action, items) {
 
             action.updateReply({ embeds: [embed] })
         }
-    } else { /* the play operation failed to complete */
+    } else {
         action.updateReply({ content: result.reason })
     }
-}
-
-module.exports = {
-    EMPTY_UNICODE,
-    
-    formatSeconds, 
-    parseRanges, 
-    getEmbedPageMessage, getPageIndexFromButtonId,
-    processPlay, processSearch
 }

@@ -1,12 +1,5 @@
 /* attempt to load environment variables from dotenv */
-
-try {
-    require("dotenv").config()
-} catch(e) {
-    if (process.env.NODE_ENV !== "production") {
-        console.warn("Failed to environment variables from dotenv. This isn't an issue if they are loaded in from elsewhere.")
-    }
-}
+import 'dotenv/config'
 
 /* catch exceptions to keep process alive */
 
@@ -14,14 +7,15 @@ process.on('uncaughtException', console.error)
 
 /* requirements */
 
-const Discord = require("discord.js")
-const { generateDependencyReport } = require('@discordjs/voice')
+import { Client } from "discord.js"
+import { generateDependencyReport } from '@discordjs/voice'
 
-const { GuildManager } = require("./src")
-const { version } = require('./package.json')
+import { GuildManager } from "./src/core/GuildManager.js"
+import config from './package.json' with { type: 'json' }
+
+const { version } = config
 
 /* set debug info */
-
 process.env.PRESENT_MIC_DEBUG_INFO = [
     `Discord Present Mic v${version} - ${process.env.NODE_ENV === "production" ? "Production" : "Development"}`, 
     "@discordjs/voice Dependency Report",
@@ -31,7 +25,7 @@ console.log(process.env.PRESENT_MIC_DEBUG_INFO)
 
 /* instantiate the client with proper gateway intents */
 
-const client = new Discord.Client({ intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"] })
+const client = new Client({ intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"] })
 
 /* connect to client events */
 

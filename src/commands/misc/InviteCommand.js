@@ -1,9 +1,8 @@
-const { MessageActionRow, MessageButton, Constants } = require('discord.js')
+import { MessageActionRow, MessageButton, Constants } from "discord.js"
+import { BaseCommand } from "../BaseCommand.js"
+import { EMPTY_UNICODE } from "../CommandUtil.js"
 
-const BaseCommand = require('../BaseCommand')
-const { EMPTY_UNICODE } = require('../CommandUtil')
-
-module.exports = class InviteCommand extends BaseCommand {
+export class InviteCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "invite",

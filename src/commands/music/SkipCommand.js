@@ -1,6 +1,6 @@
-const BaseCommand = require('../BaseCommand')
+import { BaseCommand } from '../BaseCommand.js'
 
-module.exports = class PlayCommand extends BaseCommand {
+export class SkipCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "skip",

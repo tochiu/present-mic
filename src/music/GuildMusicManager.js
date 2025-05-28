@@ -1,16 +1,17 @@
-const { Permissions } = require('discord.js')
-const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice')
+import { Permissions } from 'discord.js'
+import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice'
+import { MusicSearcher } from './MusicSearcher.js'
+import { MusicPlayer } from './MusicPlayer.js'
+import config from "../../config.json" with { type: "json" }
 
-const MusicSearcher = require("./MusicSearcher")
-const MusicPlayer = require("./MusicPlayer")
+const { MAX_QUEUE_ITEMS } = config
 
-const { MAX_QUEUE_ITEMS } = require("../../config.json")
 
 /**
  * A GuildMusicManager exists for each GuildManager. Playback, joining, disconnecting and queue state management for
  * a guild are exclusively executed here.
  */
-class GuildMusicManager {
+export class GuildMusicManager {
 
 	constructor(guild, client) {
 		this.guild = guild
@@ -189,13 +190,13 @@ class GuildMusicManager {
 				// WORKAROUND FOR ISSUE: https://github.com/discordjs/discord.js/issues/9185#issuecomment-1452514375
 
 				const networkStateChangeHandler = (_, newNetworkState) => {
-					const newUdp = Reflect.get(newNetworkState, 'udp');
-					clearInterval(newUdp?.keepAliveInterval);
-				};
+					const newUdp = Reflect.get(newNetworkState, 'udp')
+					clearInterval(newUdp?.keepAliveInterval)
+				}
 				connection.on('stateChange', (oldState, newState) => {
-					Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler);
-					Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler);
-				});
+					Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler)
+					Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler)
+				})
 			} else {
 				return
 			}
@@ -214,5 +215,3 @@ class GuildMusicManager {
 		return player
 	}
 }
-
-module.exports = GuildMusicManager

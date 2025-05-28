@@ -1,6 +1,6 @@
-const BaseCommand = require('../BaseCommand')
+import { BaseCommand } from '../BaseCommand.js'
 
-module.exports = class ClearCommand extends BaseCommand {
+export class ClearCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "clear",

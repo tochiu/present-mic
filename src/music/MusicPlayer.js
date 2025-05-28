@@ -1,21 +1,23 @@
-const { promisify } = require('util')
-const playdl = require('play-dl')
-const {
-	AudioPlayerStatus,
-	createAudioPlayer,
-	createAudioResource,
-	entersState,
-	VoiceConnectionDisconnectReason,
-	VoiceConnectionStatus,
-} = require('@discordjs/voice')
+import { promisify } from 'util'
+import { YtdlCore, toPipeableStream } from '@ybd-project/ytdl-core'
+import {
+  AudioPlayerStatus,
+  createAudioPlayer,
+  createAudioResource,
+  entersState,
+  VoiceConnectionDisconnectReason,
+  VoiceConnectionStatus,
+} from '@discordjs/voice'
 
 const wait = promisify(setTimeout)
+
+const ytdl = new YtdlCore({ hl: 'en', gl: 'US' })
 
 /**
  * A MusicPlayer exists for each active VoiceConnection. Each subscription has its own audio player and queue,
  * and it also attaches logic to the audio player and voice connection for error handling and reconnection logic.
  */
-class MusicPlayer {
+export class MusicPlayer {
 
 	constructor(voiceConnection) {
 		this._voiceConnection = voiceConnection
@@ -196,9 +198,8 @@ class MusicPlayer {
 			console.log(`Playing "${track.snippet.title}" - link: https://www.youtube.com/watch?v=${track.id}`)
 
 			/* Attempt to convert the Track into an AudioResource */
-
-			const stream = await playdl.stream(`https://www.youtube.com/watch?v=${track.id}`)
-			const resource = createAudioResource(stream.stream, {
+			const stream = toPipeableStream(await ytdl.download(`https://www.youtube.com/watch?v=${track.id}`, { filter: "audioonly" }))
+			const resource = createAudioResource(stream, {
 				inputType: stream.type,
 				metadata: {
 					track,
@@ -223,5 +224,3 @@ class MusicPlayer {
 		}
 	}
 }
-
-module.exports = MusicPlayer

@@ -1,10 +1,10 @@
-const GuildMusicManager = require('../music/GuildMusicManager')
-const GuildCommandsManager = require('../commands/GuildCommandsManager')
+import { GuildMusicManager } from '../music/GuildMusicManager.js'
+import { GuildCommandsManager } from '../commands/GuildCommandsManager.js'
 
 /**
  * Manages a single guild
  */
-class GuildManager {
+export class GuildManager {
 
     static managers = new Map()
 
@@ -33,5 +33,3 @@ class GuildManager {
         this.commands = new GuildCommandsManager(guild, client)
     }
 }
-
-module.exports = GuildManager

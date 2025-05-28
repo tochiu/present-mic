@@ -1,7 +1,7 @@
-const BaseCommand = require('../BaseCommand')
-const { processPlay, processSearch } = require('../CommandUtil')
+import { BaseCommand } from '../BaseCommand.js'
+import { processPlay, processSearch } from '../CommandUtil.js'
 
-module.exports = class PlayCommand extends BaseCommand {
+export class PlayCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "play",

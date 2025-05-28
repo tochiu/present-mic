@@ -1,4 +1,4 @@
-class BaseCommand {
+export class BaseCommand {
     constructor(client, config) {
         this.client = client
         this.config = config
@@ -36,5 +36,3 @@ class BaseCommand {
         await this.run(action)
     }
 }
-
-module.exports = BaseCommand

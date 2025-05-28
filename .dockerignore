@@ -8,6 +8,7 @@ docker-compose.yml
 node_modules
 tmp
 .env
+.env.*
 .test
 
 .vscode

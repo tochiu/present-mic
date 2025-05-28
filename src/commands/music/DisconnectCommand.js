@@ -1,8 +1,7 @@
-const { getVoiceConnection } = require('@discordjs/voice')
+import { getVoiceConnection } from '@discordjs/voice'
+import { BaseCommand } from '../BaseCommand.js'
 
-const BaseCommand = require('../BaseCommand')
-
-module.exports = class DisconnectCommand extends BaseCommand {
+export class DisconnectCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "disconnect",

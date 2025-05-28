@@ -1,17 +1,20 @@
-const { resolve } = require('path')
-const { readdir } = require('fs').promises
+import { fileURLToPath, pathToFileURL } from "url"
+import { resolve, dirname } from "path"
+import { readdir } from "fs/promises"
+import { MessageActionRow, MessageButton, Constants } from "discord.js"
+import { BaseCommand } from "./BaseCommand.js"
 
-const { MessageActionRow, MessageButton, Constants } = require('discord.js')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
-const BaseCommand = require('./BaseCommand')
-
-/* recursive fs.readdir provided by https://stackoverflow.com/a/45130990 */
 async function getFiles(dir) {
     const dirents = await readdir(dir, { withFileTypes: true })
-    const files = await Promise.all(dirents.map((dirent) => {
-        const res = resolve(dir, dirent.name)
-        return dirent.isDirectory() ? getFiles(res) : res
-    }))
+    const files = await Promise.all(
+        dirents.map(dirent => {
+            const res = resolve(dir, dirent.name)
+            return dirent.isDirectory() ? getFiles(res) : res
+        })
+    )
     return Array.prototype.concat(...files)
 }
 
@@ -20,25 +23,25 @@ const gettingCommandClasses = (async () => {
     const commands = []
     const files = await getFiles(__dirname)
     for (const filename of files) {
-        if (__dirname === __filename) {
+        if (filename === __filename) continue
+
+        const mod = await import(pathToFileURL(filename).href)
+        // grab default export or fall back to the single named export
+        const CommandClass = mod.default
+            ?? Object.values(mod).find(exp =>
+                typeof exp === "function"
+                && exp.prototype instanceof BaseCommand
+            )
+        if (!CommandClass || CommandClass === BaseCommand) {
             continue
         }
 
-        const module = require(filename)
-        if (module === BaseCommand || !(module.prototype instanceof BaseCommand)) {
-            continue
-        }
-
-        commands.push(module)
+        commands.push(CommandClass)
     }
 
     return commands
 })()
 
-/**
- * A GuildCommandInteraction is a bundle that includes extra information about the CommandInteraction
- * relevant for the functioning of each command
- */
 class GuildCommandInteraction {
     constructor(interaction, manager) {
         this.interaction = interaction
@@ -56,12 +59,11 @@ class GuildCommandInteraction {
 
     async setExpiredInteraction() {
         this.setUpdateInteraction()
-
         if (!this._optionsLast || this._optionsLast.components.length === 0) {
             return
         }
 
-        const options = Object.assign({}, this._optionsLast)
+        const options = { ...this._optionsLast }
         options.components = [
             new MessageActionRow()
                 .addComponents(
@@ -75,7 +77,7 @@ class GuildCommandInteraction {
 
         return this.updateReply(options)
     }
-    
+
     async deferReply(options) {
         if (this._deferring) {
             throw "Reply already deferred"
@@ -90,41 +92,23 @@ class GuildCommandInteraction {
             options = { content: options }
         }
 
-        if (options.content === undefined) {
-            options.content = " "
-        }
+        options.content ??= " "
+        options.embeds ??= []
+        options.files ??= []
+        options.components ??= []
+        options.stickers ??= []
+        options.attachments ??= []
 
-        if (options.embeds === undefined) {
-            options.embeds = []
-        }
-
-        if (options.files === undefined) {
-            options.files = []
-        }
-
-        if (options.components === undefined) {
-            options.components = []
-        }
-
-        if (options.stickers === undefined) {
-            options.stickers = []
-        }
-
-        if (options.attachments === undefined) {
-            options.attachments = []
-        }
-        
         const { interaction, _deferring } = this
 
         if (this._updateInteraction && this._updateInteractionEditor) {
             options = this._updateInteractionEditor(options)
         }
 
-        this._optionsLast = options 
-        
+        this._optionsLast = options
+
         if (_deferring) {
             await _deferring
-
             if (this._optionsLast !== options) {
                 return
             }
@@ -140,12 +124,7 @@ class GuildCommandInteraction {
     }
 }
 
-/**
- * A GuildCommandsManager exists for each GuildManager. Registering slash commands and handling command interactions
- * for a guild are exclusively executed here.
- */
-class GuildCommandsManager {
-
+export class GuildCommandsManager {
     constructor(guild, client) {
         this.client = client
         this.guild = guild
@@ -154,9 +133,6 @@ class GuildCommandsManager {
         this._ownerContact = ""
         this._commandErrorMessage = "Yikes! :scream: Somethin' went **horribly** wrong tryna run this command!"
 
-        /**
-         * TODO: place this owner contact logic inside the client since its independent of the guild
-         */
         this.client.application.fetch()
             .then(application => {
                 this._ownerContact = ` Might wanna contact **\`${application.owner.tag}\`** about this!`
@@ -165,17 +141,14 @@ class GuildCommandsManager {
 
         this._register()
             .then(() => console.log(`Successfully registered "${this.guild.name}" commands.`))
-            .catch((e) => {
-                /* commands failed to register */
+            .catch(e => {
                 console.error("Guild command registration error")
                 console.error(e)
 
-                /* send in system channel if it exists */
                 if (this.guild.systemChannel) {
                     this.guild.systemChannel.send("Yikes! :scream: It appears I encountered an issue registering commands for this guild." + this._ownerContact)
                 }
 
-                /* dm server owner about the issue */
                 this.guild.fetchOwner()
                     .then(owner => owner.createDM())
                     .then(dm => dm.send(`Hey! :wave: I encountered an issue registering commands for \`${this.guild.name}\`.${this._ownerContact}`))
@@ -187,7 +160,6 @@ class GuildCommandsManager {
     }
 
     async handle(interaction, manager) {
-        /* abort if not valid command */
         const command = this.map.get(interaction.commandName)
         if (!command) {
             interaction.reply({ content: "Sorry! :man_shrugging: I don't know how to execute this command!", ephemeral: true })
@@ -196,14 +168,11 @@ class GuildCommandsManager {
 
         const action = new GuildCommandInteraction(interaction, manager)
 
-        /* execute command */
         try {
             await command.handle(action)
         } catch (e) {
-            /* command error */
             console.error("Command execution error")
             console.error(e)
-
             action.updateReply({ content: this._commandErrorMessage + this._ownerContact, ephemeral: true })
         }
     }
@@ -214,10 +183,8 @@ class GuildCommandsManager {
         const commands = this.map
         const body = []
 
-        /* build body for registering slash commands to the guild */
-
-        for (const commandClass of await gettingCommandClasses) {
-            const command = new commandClass(this.client)
+        for (const CommandClass of await gettingCommandClasses) {
+            const command = new CommandClass(this.client)
             commands.set(command.config.name, command)
 
             if (command.config.hidden) {
@@ -231,5 +198,3 @@ class GuildCommandsManager {
         await this.guild.commands.set(body)
     }
 }
-
-module.exports = GuildCommandsManager

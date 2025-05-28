@@ -1,10 +1,10 @@
-const unescape = require('unescape')
-const { MessageEmbed } = require('discord.js')
+import unescape from 'unescape'
+import { MessageEmbed } from 'discord.js'
+import { BaseCommand } from '../BaseCommand.js'
+import { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, EMPTY_UNICODE } from '../CommandUtil.js'
+import config from "../../../config.json" with { type: "json" }
 
-const BaseCommand = require('../BaseCommand')
-const { formatSeconds, getEmbedPageMessage, getPageIndexFromButtonId, EMPTY_UNICODE } = require('../CommandUtil')
-
-const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_QUEUE_PAGE_SIZE } = require('../../../config.json')
+const { PRIMARY_COLOR, INTERACT_LIFETIME, MAX_QUEUE_PAGE_SIZE } = config
 
 /* return a description string based on the queue item and index */
 function getQueueItemDescription(item, index) {
@@ -93,7 +93,7 @@ function paginateQueueEmbed(embed) {
     return result
 }
 
-module.exports = class QueueCommand extends BaseCommand {
+export class QueueCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "queue",

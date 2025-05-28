@@ -1,9 +1,8 @@
-const unescape = require('unescape')
+import unescape from 'unescape'
+import { BaseCommand } from '../BaseCommand.js'
+import { parseRanges } from '../CommandUtil.js'
 
-const BaseCommand = require('../BaseCommand')
-const { parseRanges } = require('../CommandUtil')
-
-module.exports = class RemoveCommand extends BaseCommand {
+export class RemoveCommand extends BaseCommand {
     constructor(client) {
         super(client, {
             name: "remove",
@@ -26,7 +25,7 @@ module.exports = class RemoveCommand extends BaseCommand {
     async run(action) {
         const removed = action.manager.music.remove(
             parseRanges(action.interaction.options.getString("positions"))
-                .sort((a, b) => b[0] - a[0]) /* sort ranges in descending order of the starting index to preserve indexes after each remove operation */
+                .sort((a, b) => b[0] - a[0])
         )
 
         if (removed.length === 0) {
