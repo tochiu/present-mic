@@ -1,5 +1,4 @@
 import { promisify } from 'util'
-import { YtdlCore, toPipeableStream } from '@ybd-project/ytdl-core'
 import {
   AudioPlayerStatus,
   createAudioPlayer,
@@ -8,15 +7,17 @@ import {
   VoiceConnectionDisconnectReason,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
+import { EnabledTrackTypes } from 'googlevideo/utils'
+import { createSabrStream } from './utils/sabr-stream-factory.js'
 
 const wait = promisify(setTimeout)
 
-const ytdl = new YtdlCore({ hl: 'en', gl: 'US' })
 
 /**
  * A MusicPlayer exists for each active VoiceConnection. Each subscription has its own audio player and queue,
  * and it also attaches logic to the audio player and voice connection for error handling and reconnection logic.
  */
+
 export class MusicPlayer {
 
 	constructor(voiceConnection) {
@@ -198,7 +199,11 @@ export class MusicPlayer {
 			console.log(`Playing "${track.snippet.title}" - link: https://www.youtube.com/watch?v=${track.id}`)
 
 			/* Attempt to convert the Track into an AudioResource */
-			const stream = toPipeableStream(await ytdl.download(`https://www.youtube.com/watch?v=${track.id}`, { filter: "audioonly" }))
+			const stream = (await createSabrStream(track.id, {
+				preferOpus: true,
+				audioQuality: 'AUDIO_QUALITY_MEDIUM',
+				enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY
+			})).streamResults.audioStream
 			const resource = createAudioResource(stream, {
 				inputType: stream.type,
 				metadata: {
